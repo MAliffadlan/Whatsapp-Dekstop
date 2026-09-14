@@ -1331,11 +1331,11 @@ func getInitScript(ua string) string {
 			var styleEl = document.createElement('style');
 			styleEl.id = 'whatsapp-privacy-style';
 			// PRIVACY STRATEGY (perf-critical, see Fedora report): text is hidden
-			// with color:transparent + text-shadow, NOT filter:blur(). Filters
+			// with solid redaction blocks, NOT filter:blur(). Filters
 			// force a compositing layer per element (1.8 GB spikes on Wayland)
 			// and a blurred PARENT can never be un-blurred by a hovered child,
-			// which rules out container blur entirely. Text-shadow hides only
-			// the glyphs — layout, avatars, timestamps and the reply box stay
+			// which rules out container blur entirely. Solid redaction hides only
+			// the glyphs — layout, timestamps and the reply box stay
 			// intact — and :hover restores the inherited color with a single
 			// static switch (never transitioned/animated).
 			// Primary target is WhatsApp's long-stable span.selectable-text
@@ -1350,12 +1350,12 @@ func getInitScript(ua string) string {
 				'.privacy-mode [data-testid="chat-list"] [role="row"] span.selectable-text:not([data-wa-time]),',
 				'.privacy-mode #pane-side [role="row"] span[title]:not([data-wa-time]),',
 				'.privacy-mode [data-testid="chat-list"] [role="row"] span[title]:not([data-wa-time])',
-				'{ color: transparent !important; text-shadow: 0 0 10px rgba(0,0,0,.55) !important; }',
+				'{ color: transparent !important; text-shadow: none !important; background: rgba(134,150,160,.42) !important; border-radius: 3px; }',
 				// Hovering a row restores every span beneath it, so restore can
 				// never disagree with blur even if WhatsApp rotates classes.
 				'.privacy-mode #pane-side [role="row"]:hover span,',
 				'.privacy-mode [data-testid="chat-list"] [role="row"]:hover span',
-				'{ color: inherit !important; text-shadow: none !important; }',
+				'{ color: inherit !important; text-shadow: none !important; background: transparent !important; }',
 				// Layer 2: everything textual inside a message bubble, keyed ONLY
 				// on the long-stable [data-testid="msg-container"] hook — never
 				// on hashed cosmetic classes (those rotate; .message-in and
@@ -1364,9 +1364,9 @@ func getInitScript(ua string) string {
 				// the whole subtree, so blur and restore can never disagree.
 				// The reply box lives outside msg-container and stays usable.
 				'.privacy-mode #main [data-testid="msg-container"] span:not([data-wa-time])',
-				'{ color: transparent !important; text-shadow: 0 0 10px rgba(0,0,0,.55) !important; }',
+				'{ color: transparent !important; text-shadow: none !important; background: rgba(134,150,160,.42) !important; border-radius: 3px; }',
 				'.privacy-mode #main [data-testid="msg-container"]:hover span',
-				'{ color: inherit !important; text-shadow: none !important; }',
+				'{ color: inherit !important; text-shadow: none !important; background: transparent !important; }',
 				// In-chat photos/videos hide the same way (filter is the only
 				// tool for replaced elements); hover restores symmetrically.
 				'.privacy-mode #main [data-testid="msg-container"] img,',
@@ -1405,11 +1405,7 @@ func getInitScript(ua string) string {
 
 			function applyPrivacyMode(active, silent) {
 				isPrivacyActive = !!active;
-				// State lives on <html>, NEVER on <body>: the theme observer
-				// watches body classes, and WhatsApp's own theme engine also
-				// rewrites body classes — a state class on body lets the two
-				// sides retrigger each other into a 100%-CPU observer war that
-				// starves the event loop (frozen clicks/keys, stuck splash).
+				// State lives on <html>, never on WhatsApp's mutable <body>.
 				// All privacy selectors are descendant selectors, so they
 				// match identically from the <html> ancestor.
 				var rootEl = document.documentElement;
@@ -2489,10 +2485,11 @@ func getInitScript(ua string) string {
 		(function() {
 			var isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
 			var currentTheme = 'dark';
-			var themeObserver = null;
 			var themeChoiceVersion = 0;
 			var themeLoadStarted = false;
 			var themeReloadTimer = null;
+			var themeReapplyTimers = [];
+			var themeStyle = null;
 			// Keep the engine's native MediaQueryList intact. Replacing matchMedia with
 			// a partial object breaks framework listeners on some WebView2/WebKitGTK
 			// versions and was the main cross-platform difference in theme switching.
@@ -2513,6 +2510,7 @@ func getInitScript(ua string) string {
 				root.classList.add(mode);
 				root.classList.remove(opposite);
 				root.setAttribute('data-theme', mode);
+				root.setAttribute('data-wa-desk-theme', mode);
 				root.style.colorScheme = mode;
 				if (document.body) {
 					document.body.classList.add(mode);
@@ -2522,20 +2520,50 @@ func getInitScript(ua string) string {
 				}
 			}
 
+			function ensureThemeStyle() {
+				if (!themeStyle) themeStyle = document.getElementById('wa-desk-theme-style');
+				if (!themeStyle) {
+					themeStyle = document.createElement('style');
+					themeStyle.id = 'wa-desk-theme-style';
+					themeStyle.textContent = [
+						'html[data-wa-desk-theme="light"], html[data-wa-desk-theme="light"] body { color-scheme: light !important; background: #f7f9fa !important; }',
+						'html[data-wa-desk-theme="light"] #app, html[data-wa-desk-theme="light"] #side, html[data-wa-desk-theme="light"] #pane-side, html[data-wa-desk-theme="light"] #main { color-scheme: light !important; }'
+					].join('\\n');
+					(document.head || document.documentElement).appendChild(themeStyle);
+				}
+			}
+
+			function persistThemePreference(theme, isDark) {
+				try {
+					localStorage.setItem('system-theme-mode', theme === 'system' ? 'true' : 'false');
+					localStorage.setItem('theme', JSON.stringify(theme === 'system' ? (isDark ? 'dark' : 'light') : theme));
+					localStorage.setItem('wa-desk-theme', theme);
+				} catch(e) {}
+			}
+
+			function scheduleThemeReapply() {
+				while (themeReapplyTimers.length) clearTimeout(themeReapplyTimers.pop());
+				[0, 350, 1200, 2600].forEach(function(delay) {
+					themeReapplyTimers.push(setTimeout(function() {
+						var isDark = currentTheme === 'system' ? getSystemIsDark() : currentTheme === 'dark';
+						applyThemeClasses(isDark);
+						persistThemePreference(currentTheme, isDark);
+						if (window.syncToolbarBtnTheme) window.syncToolbarBtnTheme(isDark);
+						if (window.syncRailSettingsBtnTheme) window.syncRailSettingsBtnTheme(isDark);
+					}, delay));
+				});
+			}
+
 			function applyThemeToDOM(theme) {
 				currentTheme = theme;
 				var isDark = (theme === 'system') ? getSystemIsDark() : (theme === 'dark');
 
 				// 1. Update the document immediately for our controls and current page.
 				applyThemeClasses(isDark);
+				ensureThemeStyle();
 
-				// 2. Synchronize WhatsApp Web's own localStorage keys
-				try {
-					var themeModeVal = theme === 'system' ? 'true' : 'false';
-					var themeVal = JSON.stringify(theme === 'system' ? (isDark ? 'dark' : 'light') : theme);
-					localStorage.setItem('system-theme-mode', themeModeVal);
-					localStorage.setItem('theme', themeVal);
-				} catch(e) {}
+				// 2. Synchronize WhatsApp Web's own localStorage keys before its tree settles.
+				persistThemePreference(theme, isDark);
 
 				// 3. Update modal and toolbar button if visible
 				if (window.syncModalTheme) {
@@ -2544,36 +2572,12 @@ func getInitScript(ua string) string {
 				if (window.syncToolbarBtnTheme) {
 					window.syncToolbarBtnTheme(isDark);
 				}
+				if (window.syncRailSettingsBtnTheme) window.syncRailSettingsBtnTheme(isDark);
 
-				// 4. Repair our theme classes only when they were actually
-				// stripped. Repairing unconditionally on every body-class
-				// mutation lets our observer and WhatsApp's theme engine
-				// retrigger each other forever (100%-CPU observer war that
-				// starves the event loop: frozen clicks/keys, stuck splash).
-				if (window.MutationObserver && document.body) {
-					if (!themeObserver) {
-						themeObserver = new MutationObserver(function() {
-							if (shouldPauseBackgroundWork()) return;
-							var shouldBeDark = (currentTheme === 'system') ? getSystemIsDark() : (currentTheme === 'dark');
-							var want = shouldBeDark ? 'dark' : 'light';
-							var root = document.documentElement;
-							var repaired = false;
-							if (root && !root.classList.contains(want)) {
-								root.classList.add(want);
-								root.classList.remove(shouldBeDark ? 'light' : 'dark');
-								repaired = true;
-							}
-							if (document.body && !document.body.classList.contains(want)) {
-								document.body.classList.add(want);
-								document.body.classList.remove(shouldBeDark ? 'light' : 'dark');
-								repaired = true;
-							}
-							if (repaired) applyThemeToDOM(currentTheme);
-						});
-					}
-					themeObserver.disconnect();
-					themeObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
-				}
+				// WhatsApp may finish mounting after our script. Reapply a small, bounded
+				// number of times instead of observing body classes forever: that old
+				// observer could enter a feedback loop and raise CPU on Windows/macOS.
+				scheduleThemeReapply();
 			}
 
 			window.getAppTheme = function() {
@@ -2605,6 +2609,7 @@ func getInitScript(ua string) string {
 				var onSysChange = function() {
 					if (currentTheme === 'system') {
 						applyThemeToDOM('system');
+						if (window.setAppThemeNative) Promise.resolve(window.setAppThemeNative('system')).catch(function() {});
 					}
 				};
 				if (sysMedia.addEventListener) {
@@ -2640,8 +2645,9 @@ func getInitScript(ua string) string {
 				var header = document.querySelector('#side header') || document.querySelector('header');
 				if (!header) return;
 
-				// Find actions container inside header (where Status, Channels, New Chat icons live)
-				var actionsWrap = header.querySelector('div:last-child') || header.querySelector('span:last-child') || header;
+				// Header descendants change frequently. Use its direct trailing child, not
+				// querySelector('div:last-child'), which can select an invisible nested node.
+				var actionsWrap = header.lastElementChild || header;
 				if (!actionsWrap) return;
 
 				var btn = document.createElement('button');
@@ -2685,25 +2691,38 @@ func getInitScript(ua string) string {
 				actionsWrap.appendChild(btn);
 			}
 
-			// WhatsApp periodically replaces the sidebar header. Keep an explicit
-			// entry point available if its changing DOM prevents the in-flow gear
-			// from being mounted. This is an accessibility fallback, not a second
-			// control: it removes itself as soon as the normal toolbar button exists.
+			function isElementVisible(el) {
+				if (!el || !el.isConnected) return false;
+				var rect = el.getBoundingClientRect();
+				var style = window.getComputedStyle(el);
+				return rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
+			}
+
+			// Keep one compact Settings control in the left rail. Header content is
+			// routinely rebuilt by WhatsApp; the rail control must remain available
+			// even when a header button exists but is clipped or invisible.
 			function ensureSettingsFallback() {
-				var toolbarButton = document.getElementById('wa-toolbar-settings-btn');
+				var headerButton = document.getElementById('wa-toolbar-settings-btn');
 				var fallback = document.getElementById('wa-settings-fallback-btn');
-				if (toolbarButton) {
-					if (fallback && fallback.parentNode) fallback.parentNode.removeChild(fallback);
+				if (fallback) {
+					fallback.setAttribute('data-header-settings-visible', isElementVisible(headerButton) ? 'true' : 'false');
 					return;
 				}
-				if (fallback || !document.body) return;
+				if (!document.body) return;
 				fallback = document.createElement('button');
 				fallback.id = 'wa-settings-fallback-btn';
 				fallback.type = 'button';
 				fallback.setAttribute('aria-label', 'Open Settings and Controls');
 				fallback.title = 'Settings & Controls (' + (isMac ? 'Cmd' : 'Ctrl') + ' + ,)';
-				fallback.textContent = '⚙ Settings';
-				fallback.style.cssText = 'position:fixed;left:14px;bottom:14px;z-index:9999998;border:1px solid rgba(134,150,160,.55);border-radius:8px;background:#111b21;color:#e9edef;padding:8px 10px;font:600 12px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.24);';
+				fallback.innerHTML = '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2-2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>';
+				fallback.style.cssText = 'position:fixed;left:18px;bottom:96px;z-index:9999998;width:40px;height:40px;padding:0;display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(134,150,160,.45);border-radius:50%;background:#111b21;color:#aebac1;cursor:pointer;';
+				fallback.setAttribute('data-header-settings-visible', isElementVisible(headerButton) ? 'true' : 'false');
+				window.syncRailSettingsBtnTheme = function(isDark) {
+					fallback.style.background = isDark ? '#111b21' : '#ffffff';
+					fallback.style.color = isDark ? '#aebac1' : '#54656f';
+					fallback.style.borderColor = isDark ? 'rgba(134,150,160,.45)' : 'rgba(84,101,111,.28)';
+				};
+				window.syncRailSettingsBtnTheme(currentTheme === 'system' ? getSystemIsDark() : currentTheme === 'dark');
 				fallback.onclick = function(e) {
 					e.preventDefault();
 					e.stopPropagation();

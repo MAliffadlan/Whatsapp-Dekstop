@@ -206,6 +206,8 @@ func TestSettingsAlwaysHasAnAccessibleEntryPoint(t *testing.T) {
 		"wa-toolbar-settings-btn",
 		"wa-settings-fallback-btn",
 		"ensureSettingsFallback",
+		"isElementVisible",
+		"header.lastElementChild || header",
 		"setTimeout(ensureSettingsEntryPoints, 600)",
 		"window.addEventListener('keydown', function(e)",
 		"}, true);",
@@ -213,6 +215,39 @@ func TestSettingsAlwaysHasAnAccessibleEntryPoint(t *testing.T) {
 		if !strings.Contains(script, want) {
 			t.Errorf("settings must remain reachable on changing WhatsApp UI; missing %q", want)
 		}
+	}
+}
+
+func TestPrivacyModeUsesSolidRedactionWithoutFuzzyTextShadow(t *testing.T) {
+	script := getInitScript("test-agent")
+	for _, want := range []string{
+		"background: rgba(134,150,160,.42)",
+		"text-shadow: none !important",
+		"border-radius: 3px",
+	} {
+		if !strings.Contains(script, want) {
+			t.Errorf("privacy redaction is missing %q", want)
+		}
+	}
+	if strings.Contains(script, "text-shadow: 0 0 10px") {
+		t.Fatal("privacy mode must not render fuzzy text shadows")
+	}
+}
+
+func TestThemeReapplyIsBoundedAndAvoidsObserverFeedbackLoop(t *testing.T) {
+	script := getInitScript("test-agent")
+	for _, want := range []string{
+		"data-wa-desk-theme",
+		"function scheduleThemeReapply()",
+		"[0, 350, 1200, 2600]",
+		"wa-desk-theme-style",
+	} {
+		if !strings.Contains(script, want) {
+			t.Errorf("stable theme application is missing %q", want)
+		}
+	}
+	if strings.Contains(script, "themeObserver") {
+		t.Fatal("theme class observer can enter a WhatsApp feedback loop")
 	}
 }
 
