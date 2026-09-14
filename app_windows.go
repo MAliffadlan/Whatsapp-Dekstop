@@ -629,6 +629,11 @@ func runApp() {
 	}
 	defer w.Destroy()
 
+	// WebView2 reserves browser accelerator keys by default, so combinations
+	// such as F5, Ctrl+R and Ctrl+Shift+T never reached the page's own
+	// handlers on Windows. macOS delivers them to the page already; match it.
+	_ = w.SetBrowserAcceleratorKeysEnabled(false)
+
 	hwnd := uintptr(w.Window())
 	configureWindow(hwnd)
 
