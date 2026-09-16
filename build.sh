@@ -46,6 +46,21 @@ build_windows() {
     rm -f WhatsApp-Desk-Windows-x64.zip
     zip -q WhatsApp-Desk-Windows-x64.zip WhatsAppDesk.exe
     echo "Created: WhatsAppDesk.exe and WhatsApp-Desk-Windows-x64.zip"
+    # Windows installer (NSIS, per-user Setup). Fresh installs must use the
+    # Setup; the plain .exe/.zip stay as the in-app self-update payload and
+    # as a portable fallback. Built on any host with makensis (CI installs
+    # NSIS on windows-latest; local macOS hosts can `brew install nsis`).
+    if command -v makensis >/dev/null 2>&1 && [ -f "installer/windows/WhatsAppDesk.nsi" ]; then
+        echo "Building Windows Setup installer (NSIS)..."
+        rm -f "WhatsApp-Desk-Windows-x64-Setup.exe"
+        case "$(uname -s)" in
+            MINGW*|MSYS*|CYGWIN*) makensis "/DVERSION=${VERSION}" "installer/windows/WhatsAppDesk.nsi" ;;
+            *) makensis "-DVERSION=${VERSION}" "installer/windows/WhatsAppDesk.nsi" ;;
+        esac
+        echo "Created: WhatsApp-Desk-Windows-x64-Setup.exe"
+    else
+        echo "Notice: makensis not found, skipping Setup.exe (CI builds it on windows-latest)."
+    fi
 }
 
 check_all() {

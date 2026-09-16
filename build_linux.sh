@@ -56,6 +56,11 @@ else
     # Copy assets
     cp icon.png "${OUTPUT_DIR}/"
 
+    # Bundle optional shell installers with the portable archive. Package
+    # managers (DEB/RPM) remain the preferred system-install path.
+    install -m 0755 installer/linux/install.sh "${OUTPUT_DIR}/install.sh"
+    install -m 0755 installer/linux/uninstall.sh "${OUTPUT_DIR}/uninstall.sh"
+
     # Generate .desktop launcher
     cat << EOF > "${OUTPUT_DIR}/${APP_NAME}.desktop"
 [Desktop Entry]

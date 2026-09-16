@@ -25,7 +25,7 @@ Latest published release: **v1.5.9.2**
 | Platform | Download |
 | --- | --- |
 | macOS, Apple Silicon and Intel | [DMG](https://github.com/vianziro/Whatsapp-Dekstop/releases/latest/download/WhatsApp-Desk-macOS-Universal.dmg) · [ZIP](https://github.com/vianziro/Whatsapp-Dekstop/releases/latest/download/WhatsApp-Desk-macOS-Universal.zip) |
-| Windows 10/11 x64 | [EXE](https://github.com/vianziro/Whatsapp-Dekstop/releases/latest/download/WhatsAppDesk.exe) · [ZIP](https://github.com/vianziro/Whatsapp-Dekstop/releases/latest/download/WhatsApp-Desk-Windows-x64.zip) |
+| Windows 10/11 x64 | [Setup](https://github.com/vianziro/Whatsapp-Dekstop/releases/latest/download/WhatsApp-Desk-Windows-x64-Setup.exe) · [Portable EXE](https://github.com/vianziro/Whatsapp-Dekstop/releases/latest/download/WhatsAppDesk.exe) |
 | Debian/Ubuntu x64 | [DEB](https://github.com/vianziro/Whatsapp-Dekstop/releases/latest/download/WhatsApp-Desk-Linux-amd64.deb) · [tar.gz](https://github.com/vianziro/Whatsapp-Dekstop/releases/latest/download/WhatsApp-Desk-Linux-x64.tar.gz) |
 | Fedora/RHEL x64 | [RPM](https://github.com/vianziro/Whatsapp-Dekstop/releases/latest/download/WhatsApp-Desk-Fedora-x64.rpm) · [portable tar.gz](https://github.com/vianziro/Whatsapp-Dekstop/releases/latest/download/WhatsApp-Desk-Linux-x64.tar.gz) |
 
@@ -39,7 +39,7 @@ Linux arm64 packages will be published starting with v1.5.9.1. The updater only 
 - Configurable download folder.
 - Privacy mode, always-on-top, audio mute, zoom, and theme controls.
 - Native menus, notifications, and automatic update checks.
-- Universal macOS build and portable Windows build.
+- Universal macOS build, Windows installer, and portable Linux build.
 
 RAM and CPU usage depend on the operating system, active chats, calls, media, and the web engine version.
 
@@ -55,7 +55,7 @@ The macOS build supports Apple Silicon and Intel. Camera and microphone permissi
 
 ### Windows
 
-Download and run `WhatsAppDesk.exe`. Microsoft Edge WebView2 is required and is normally already installed on current Windows 10 and Windows 11 systems.
+Download and run `WhatsApp-Desk-Windows-x64-Setup.exe` for a normal per-user installation with Start Menu and desktop shortcuts. Microsoft Edge WebView2 is required and is normally already installed on current Windows 10 and Windows 11 systems.
 
 If SmartScreen appears, review the publisher warning, choose **More info**, and continue only if the file came from this repository's release page.
 
