@@ -6,8 +6,8 @@ import (
 )
 
 const (
-	windowWidth  = 1100
-	windowHeight = 750
+	windowWidth  = 1200
+	windowHeight = 800
 )
 
 func getInitScript(ua string) string {
@@ -84,6 +84,10 @@ func getInitScript(ua string) string {
 				return undefined;
 			}
 		}
+
+		// Go-side platform constant — more reliable than navigator.platform which is
+		// deprecated in Chrome 93+ and may return "" in newer WebView2 builds.
+		var __WA_GOOS = '` + runtime.GOOS + `';
 
 	try {
 		// UserAgent and platform override to Google Chrome
@@ -1768,9 +1772,10 @@ func getInitScript(ua string) string {
 			window.addEventListener('keydown', function(e) {
 				if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'p' || e.key === 'P')) {
 					e.preventDefault();
+					e.stopPropagation();
 					window.togglePrivacyMode();
 				}
-			});
+			}, true);
 		})();
 
 		// Always on Top Toggle (Cmd/Ctrl + Shift + T)
@@ -1793,9 +1798,10 @@ func getInitScript(ua string) string {
 			window.addEventListener('keydown', function(e) {
 				if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 't' || e.key === 'T')) {
 					e.preventDefault();
+					e.stopPropagation();
 					window.toggleAlwaysOnTop();
 				}
-			});
+			}, true);
 		})();
 
 		// Reload and Refresh Functions (Cmd/Ctrl + R, Cmd/Ctrl + Shift + R, F5)
@@ -1820,12 +1826,14 @@ func getInitScript(ua string) string {
 		window.addEventListener('keydown', function(e) {
 			if (e.key === 'F5' || ((e.metaKey || e.ctrlKey) && (e.key === 'r' || e.key === 'R') && !e.shiftKey && !e.altKey)) {
 				e.preventDefault();
+				e.stopPropagation();
 				window.reloadWhatsApp();
 			} else if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'r' || e.key === 'R')) {
 				e.preventDefault();
+				e.stopPropagation();
 				window.hardRefreshWhatsApp();
 			}
-		});
+		}, true);
 
 		// Audio Mute Toggle (Cmd/Ctrl + Shift + M)
 		(function() {
@@ -1845,9 +1853,10 @@ func getInitScript(ua string) string {
 			window.addEventListener('keydown', function(e) {
 				if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'm' || e.key === 'M')) {
 					e.preventDefault();
+					e.stopPropagation();
 					window.toggleMuteAudio();
 				}
-			});
+			}, true);
 			document.addEventListener('play', function(e) {
 				if (isMuted && e.target && (e.target.tagName === 'AUDIO' || e.target.tagName === 'VIDEO')) {
 					e.target.muted = true;
@@ -1875,9 +1884,10 @@ func getInitScript(ua string) string {
 			window.addEventListener('keydown', function(e) {
 				if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 's' || e.key === 'S')) {
 					e.preventDefault();
+					e.stopPropagation();
 					window.toggleAutoStart();
 				}
-			});
+			}, true);
 		})();
 
 		// In-App Auto Updater UI and Handlers
@@ -2038,9 +2048,10 @@ func getInitScript(ua string) string {
 			window.addEventListener('keydown', function(e) {
 				if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'u' || e.key === 'U')) {
 					e.preventDefault();
+					e.stopPropagation();
 					window.triggerCheckForUpdate();
 				}
-			});
+			}, true);
 		})();
 
 		// Dynamic Responsive Desktop Layout (enables seamless shrinking and expanding)
@@ -2716,7 +2727,7 @@ func getInitScript(ua string) string {
 
 		// Theme Manager, In-Flow Header Toolbar Button & Control Center Modal
 		(function() {
-			var isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+			var isMac = (__WA_GOOS === 'darwin') || (navigator.platform && navigator.platform.toUpperCase().indexOf('MAC') >= 0);
 			var currentTheme = 'dark';
 			var themeChoiceVersion = 0;
 			var themeLoadStarted = false;
@@ -2925,8 +2936,25 @@ func getInitScript(ua string) string {
 			function isElementVisible(el) {
 				if (!el || !el.isConnected) return false;
 				var rect = el.getBoundingClientRect();
+				if (rect.width <= 0 || rect.height <= 0) return false;
 				var style = window.getComputedStyle(el);
-				return rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
+				if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
+				var docEl = document.documentElement;
+				var vh = window.innerHeight || (docEl && docEl.clientHeight) || 800;
+				var vw = window.innerWidth || (docEl && docEl.clientWidth) || 1200;
+				if (rect.bottom <= 0 || rect.right <= 0 || rect.top >= vh || rect.left >= vw) return false;
+				var p = el.parentElement;
+				while (p && p !== document.body && p !== document.documentElement) {
+					var ps = window.getComputedStyle(p);
+					if (ps && (ps.overflow === 'hidden' || ps.overflowX === 'hidden' || ps.overflowY === 'hidden')) {
+						var pr = p.getBoundingClientRect();
+						if (rect.bottom <= pr.top || rect.top >= pr.bottom || rect.right <= pr.left || rect.left >= pr.right) {
+							return false;
+						}
+					}
+					p = p.parentElement;
+				}
+				return true;
 			}
 
 			// Keep one compact Settings control in the left rail. Header content is
@@ -2951,7 +2979,7 @@ func getInitScript(ua string) string {
 				fallback.setAttribute('aria-label', 'Open Settings and Controls');
 				fallback.title = 'Settings & Controls (' + (isMac ? 'Cmd' : 'Ctrl') + ' + ,)';
 				fallback.innerHTML = '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>';
-				fallback.style.cssText = 'position:fixed;left:18px;bottom:96px;z-index:9999998;width:40px;height:40px;padding:0;display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(134,150,160,.45);border-radius:50%;background:#111b21;color:#aebac1;cursor:pointer;';
+				fallback.style.cssText = 'position:fixed;left:14px;bottom:20px;z-index:9999998;width:38px;height:38px;padding:0;display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(134,150,160,.45);border-radius:50%;background:#111b21;color:#aebac1;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.3);';
 				fallback.setAttribute('data-header-settings-visible', headerVisible ? 'true' : 'false');
 				// Only visible when the header button is missing or unusable.
 				fallback.style.display = headerVisible ? 'none' : 'inline-flex';
