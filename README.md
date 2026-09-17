@@ -18,23 +18,18 @@
 
 ---
 
-<p align="center">
-  <img src="screenshots/release-1.5.9.4-announcement.png" width="480" alt="WhatsApp Desk 1.5.9.4 Release Poster">
-</p>
+## ⚡ Downloads
 
----
+Get the latest stable release for your operating system (updated automatically):
 
-## ⚡ Download (v1.5.9.4)
-
-| Platform | Recommended Installer | Portable / Alternative | Requirements |
+| Platform | Recommended Installer | Portable / Archive | Requirements |
 | :--- | :--- | :--- | :--- |
 | **macOS** | [**Universal DMG**](https://github.com/vianziro/Whatsapp-Dekstop/releases/latest/download/WhatsApp-Desk-macOS-Universal.dmg) | [Universal ZIP](https://github.com/vianziro/Whatsapp-Dekstop/releases/latest/download/WhatsApp-Desk-macOS-Universal.zip) | macOS 11.0+ (Apple Silicon & Intel) |
 | **Windows 10 / 11** | [**Setup Wizard (.exe)**](https://github.com/vianziro/Whatsapp-Dekstop/releases/latest/download/WhatsApp-Desk-Windows-x64-Setup.exe) | [Portable EXE](https://github.com/vianziro/Whatsapp-Dekstop/releases/latest/download/WhatsAppDesk.exe) | Windows 10/11 x64 (WebView2 runtime) |
-| **Debian / Ubuntu** | [**DEB Package**](https://github.com/vianziro/Whatsapp-Dekstop/releases/download/v1.5.9.2/WhatsApp-Desk-Linux-amd64.deb) | [tar.gz Archive](https://github.com/vianziro/Whatsapp-Dekstop/releases/download/v1.5.9.2/WhatsApp-Desk-Linux-x64.tar.gz) | GTK 3 & WebKitGTK 4.0/4.1 *(v1.5.9.2)* |
-| **Fedora / RHEL** | [**RPM Package**](https://github.com/vianziro/Whatsapp-Dekstop/releases/download/v1.5.9.2/WhatsApp-Desk-Fedora-x64.rpm) | [tar.gz Archive](https://github.com/vianziro/Whatsapp-Dekstop/releases/download/v1.5.9.2/WhatsApp-Desk-Linux-x64.tar.gz) | WebKitGTK 4.1 *(v1.5.9.2)* |
+| **Linux** | [**Browse Releases (DEB / RPM)**](https://github.com/vianziro/Whatsapp-Dekstop/releases) | [tar.gz Archives](https://github.com/vianziro/Whatsapp-Dekstop/releases) | GTK 3 & WebKitGTK |
 
-> [!NOTE]
-> Linux packages remain pinned to **v1.5.9.2** while the Linux build of the current release is being verified. You can [browse all releases](https://github.com/vianziro/Whatsapp-Dekstop/releases) anytime.
+> [!TIP]
+> Download links point automatically to the latest release assets. You can also view all past versions and architectures on the [Releases](https://github.com/vianziro/Whatsapp-Dekstop/releases) page.
 
 ---
 
@@ -131,52 +126,15 @@ Default profile locations:
 - Windows: `%APPDATA%\WhatsAppDesk\UserData\`
 - Linux: `~/.config/whatsapp-desk/`
 
-## Version 1.5.9.4
+---
 
-- Fixes MutationObserver initialization crash on Windows WebView2 (#12): guards documentElement and head during pre-DOM script creation so the Settings modal opens reliably instead of triggering recovery mode.
-- Isolates runtime injected modules (`waRunModule`): individual DOM observation or feature errors can no longer abort other modules or prevent Settings and shortcuts from loading.
-- Windows installer setup wizard and portable binary updated.
+## 📜 Release Notes & Changelog
 
-## Version 1.5.9.3
+All release notes, detailed change lists, and verification hashes are maintained on GitHub:
 
-- Settings now appears exactly once: the rail fallback and the last-resort launcher stay hidden while the header control is visible, so no duplicate gear can appear.
-- Windows installer is now a full setup wizard with branded graphics, Start Menu and desktop shortcuts, and a proper Apps & features entry with uninstall. The portable EXE remains available.
-- Restores the last-resort Settings launcher when the other entry points fail, so the panel stays reachable.
-- Fixes per-monitor window placement: each display remembers its own position and size, and a frame from a disconnected monitor is never restored off-screen.
+👉 **[View All Releases & Changelogs on GitHub](https://github.com/vianziro/Whatsapp-Dekstop/releases)**
 
-## Version 1.5.9.2
-
-- Reduced CPU spikes while scrolling by deferring non-essential DOM observers and capping media/spellcheck scan batches.
-- Added local Help & diagnostics with a shortcut reference; it never sends chat data or files.
-- Added Fedora/RHEL x64 RPM packaging alongside the portable Linux archive.
-
-## Version 1.5.9.1
-
-- Linux update selection now distinguishes x64 and arm64, preventing an incompatible x64 download on arm64 devices.
-- Release automation builds and publishes macOS, Windows x64, Linux x64, and Linux arm64 from the tagged source version.
-- Removed the repository-tracked pseudo-secret build gate; it did not provide runtime security and could make a clean build fail unexpectedly.
-
-## Version 1.5.9
-
-- Critical fix: removed the v1.5.8 CSP policy that blocked WhatsApp boot bundles and left the app stuck on the splash screen.
-- If you installed v1.5.8, update to v1.5.9 (in-app updater or fresh download).
-
-## Version 1.5.8
-
-- Native folder picker on Linux (GTK) and system tray with quick controls.
-- Unified settings storage and extended WebView2 cache cleanup on Windows.
-- Drag & drop files into chat, native spellcheck, and search/translate context menu.
-- Taskbar progress badge on Windows and tray unread indicator on Linux.
-- Hardened runtime on macOS, lazy spreadsheet engine, and CSP hardening.
-- Unified `build.sh` and CI builds for macOS, Windows, and Linux.
-
-## Version 1.5.7
-
-- Attach menu works on macOS: Document and Photos & videos now open the native file picker.
-- Files are no longer saved twice when a download is triggered from two paths.
-- All v1.5.6 fixes included: silent background update on Windows (no console flashes), Fedora RPM packages, reliable document preview and appearance switching.
-
-Older releases are retained for reference but are deprecated.
+---
 
 ## License and disclaimer
 
