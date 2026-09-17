@@ -18,7 +18,11 @@ echo "== 1/3 building Windows binary (v${VERSION}) =="
 bash build_windows.sh "$VERSION"
 
 echo "== 2/3 generating wizard graphics =="
-WA_DESK_VERSION="$VERSION" python3 installer/windows/make_wizard_assets.py
+PYTHON_BIN="$(which python3 2>/dev/null || echo /opt/homebrew/bin/python3)"
+if [ -x /opt/homebrew/bin/python3 ]; then
+  PYTHON_BIN=/opt/homebrew/bin/python3
+fi
+WA_DESK_VERSION="$VERSION" "$PYTHON_BIN" installer/windows/make_wizard_assets.py
 
 echo "== 3/3 compiling installer =="
 makensis -DVERSION="$VERSION" -DAPPEXE_PATH="../../dist_win/WhatsAppDesk.exe" \

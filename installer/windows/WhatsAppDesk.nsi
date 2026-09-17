@@ -18,7 +18,7 @@
 ;   makensis -DVERSION=1.5.9.3 -DAPPEXE_PATH=dist_win\WhatsAppDesk.exe installer\windows\WhatsAppDesk.nsi
 ; Output: WhatsApp-Desk-Windows-x64-Setup.exe (repo root).
 
-Unicode true
+Target x86-ansi
 
 !define APPNAME "WhatsApp Desk"
 !define APPID "WhatsAppDesk"

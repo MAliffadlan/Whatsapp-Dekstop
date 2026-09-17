@@ -53,14 +53,17 @@ func getOnboardingScript() string {
 
 				var rows = document.createElement('div');
 				rows.style.cssText = 'border-top:1px solid ' + border + ';border-bottom:1px solid ' + border + ';margin-bottom:20px;';
+				var mod = (typeof __WA_GOOS !== 'undefined' && __WA_GOOS === 'darwin') ? 'Cmd' : 'Ctrl';
 				var items = [
-					['Blur conversation messages', 'Cmd/Ctrl + Shift + P'],
-					['Keep window always on top', 'Cmd/Ctrl + Shift + T'],
-					['Open settings & controls', 'Cmd/Ctrl + ,']
+					['Blur conversation messages & media', mod + ' + Shift + P'],
+					['Keep window always on top', mod + ' + Shift + T'],
+					['Settings & Control Center', mod + ' + ,'],
+					['Open downloads folder', mod + ' + Shift + D'],
+					['Mute notification sound', mod + ' + Shift + M']
 				];
 				items.forEach(function(item, index) {
 					var row = document.createElement('div');
-					row.style.cssText = 'min-height:44px;display:flex;align-items:center;justify-content:space-between;gap:16px;' + (index ? 'border-top:1px solid ' + border + ';' : '');
+					row.style.cssText = 'min-height:42px;display:flex;align-items:center;justify-content:space-between;gap:16px;' + (index ? 'border-top:1px solid ' + border + ';' : '');
 					row.innerHTML = '<span style="font-size:12.5px;line-height:1.4;">' + item[0] + '</span>' + shortcut(item[1]);
 					rows.appendChild(row);
 				});
@@ -100,9 +103,10 @@ func getOnboardingScript() string {
 			window.addEventListener('keydown', function(e) {
 				if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'h' || e.key === 'H')) {
 					e.preventDefault();
+					e.stopPropagation();
 					showOnboarding(true);
 				}
-			});
+			}, true);
 
 			function initCheck() {
 				if (!document.body) { setTimeout(initCheck, 150); return; }
