@@ -26,10 +26,10 @@ Latest published release: **v1.5.9.3**
 | --- | --- |
 | macOS, Apple Silicon and Intel | [DMG](https://github.com/vianziro/Whatsapp-Dekstop/releases/latest/download/WhatsApp-Desk-macOS-Universal.dmg) · [ZIP](https://github.com/vianziro/Whatsapp-Dekstop/releases/latest/download/WhatsApp-Desk-macOS-Universal.zip) |
 | Windows 10/11 x64 | [Setup](https://github.com/vianziro/Whatsapp-Dekstop/releases/latest/download/WhatsApp-Desk-Windows-x64-Setup.exe) · [Portable EXE](https://github.com/vianziro/Whatsapp-Dekstop/releases/latest/download/WhatsAppDesk.exe) |
-| Debian/Ubuntu x64 | [DEB](https://github.com/vianziro/Whatsapp-Dekstop/releases/latest/download/WhatsApp-Desk-Linux-amd64.deb) · [tar.gz](https://github.com/vianziro/Whatsapp-Dekstop/releases/latest/download/WhatsApp-Desk-Linux-x64.tar.gz) |
-| Fedora/RHEL x64 | [RPM](https://github.com/vianziro/Whatsapp-Dekstop/releases/latest/download/WhatsApp-Desk-Fedora-x64.rpm) · [portable tar.gz](https://github.com/vianziro/Whatsapp-Dekstop/releases/latest/download/WhatsApp-Desk-Linux-x64.tar.gz) |
+| Debian/Ubuntu x64 | [DEB](https://github.com/vianziro/Whatsapp-Dekstop/releases/download/v1.5.9.2/WhatsApp-Desk-Linux-amd64.deb) · [tar.gz](https://github.com/vianziro/Whatsapp-Dekstop/releases/download/v1.5.9.2/WhatsApp-Desk-Linux-x64.tar.gz) |
+| Fedora/RHEL x64 | [RPM](https://github.com/vianziro/Whatsapp-Dekstop/releases/download/v1.5.9.2/WhatsApp-Desk-Fedora-x64.rpm) · [portable tar.gz](https://github.com/vianziro/Whatsapp-Dekstop/releases/download/v1.5.9.2/WhatsApp-Desk-Linux-x64.tar.gz) |
 
-Linux arm64 packages will be published starting with v1.5.9.1. The updater only offers an architecture-compatible package; it never substitutes an x64 build on arm64.
+Linux packages are pinned to **v1.5.9.2**: v1.5.9.3 ships macOS and Windows only, and the Linux build of this version is still being verified. The pinned links above are known-good, and Linux users can also [browse every release](https://github.com/vianziro/Whatsapp-Dekstop/releases). The updater only offers an architecture-compatible package; it never substitutes an x64 build on arm64.
 
 ### Verifying your download
 
