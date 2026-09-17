@@ -556,7 +556,8 @@ func getInitScript(ua string) string {
 				if (!isFileDrag(e) || !isChatDrop(e)) return;
 				dragCounter++;
 				e.preventDefault();
-				e.stopPropagation();
+				// Do NOT stopPropagation — let WhatsApp's own dragenter handlers also fire
+				// so its native drop zone activates (needed for document drops)
 				var dz = getDropZone();
 				if (dz) dz.classList.add('wa-drag-over');
 			}
@@ -573,7 +574,8 @@ func getInitScript(ua string) string {
 			function handleDragOver(e) {
 				if (!isFileDrag(e) || !isChatDrop(e)) return;
 				e.preventDefault();
-				e.stopPropagation();
+				// Do NOT stopPropagation — WhatsApp needs dragover to reach #main
+				// for its native drop handler to accept the drop event
 				e.dataTransfer.dropEffect = 'copy';
 			}
 
