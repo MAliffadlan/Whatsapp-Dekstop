@@ -595,30 +595,66 @@ func getInitScript(ua string) string {
 
 			function findAttachButton() {
 				return document.querySelector(
+					'[data-testid="attach-menu-plus"], ' +
+					'[data-testid="conversation-clip"], ' +
 					'[data-testid="clip"], [data-icon="clip"], ' +
 					'[data-testid="plus"], [data-icon="plus"], ' +
+					'#main footer [role="button"][aria-label*="Attach" i], ' +
+					'#main footer [role="button"][aria-label*="Lampirkan" i], ' +
+					'#main footer button[aria-label*="Attach" i], ' +
+					'#main footer button[aria-label*="Lampirkan" i], ' +
 					'button[aria-label*="Attach" i], button[aria-label*="Lampirkan" i], ' +
 					'[role="button"][aria-label*="Attach" i], [role="button"][aria-label*="Lampirkan" i], ' +
 					'button[title*="Attach" i], button[title*="Lampirkan" i]'
 				);
 			}
 
-			function findMediaInput() {
-				var container = document.querySelector(
-					'[data-testid="attach-image"], ' +
-					'li[data-testid*="image"], ' +
-					'[aria-label*="Photos & videos" i], ' +
-					'[aria-label*="Foto & video" i]'
-				);
+			function findInputInOrNear(el) {
+				if (!el) return null;
+				var inp = el.querySelector('input[type="file"]');
+				if (inp) return inp;
+				var container = el.closest('li, [role="menuitem"], [role="button"], [data-testid*="attach"]');
 				if (container) {
-					var inp = container.querySelector('input[type="file"]');
+					inp = container.querySelector('input[type="file"]');
 					if (inp) return inp;
+				}
+				if (el.parentElement) {
+					inp = el.parentElement.querySelector('input[type="file"]');
+					if (inp) return inp;
+				}
+				return null;
+			}
+
+			function findMediaInput() {
+				var selectors = [
+					'li[data-testid*="attach-media"]',
+					'li[data-testid*="attach-image"]',
+					'li[data-testid*="image"]',
+					'[data-testid*="attach-media"]',
+					'[data-testid*="attach-image"]',
+					'[data-testid="mi-attach-media"]',
+					'[data-testid="attach-image"]',
+					'[data-icon="attach-image"]',
+					'[data-icon="image"]',
+					'[aria-label*="Photos & videos" i]',
+					'[aria-label*="Foto & video" i]',
+					'[aria-label*="Fotos y videos" i]',
+					'[aria-label*="Fotos e vídeos" i]',
+					'[title*="Photos & videos" i]',
+					'[title*="Foto & video" i]'
+				];
+				for (var s = 0; s < selectors.length; s++) {
+					var el = document.querySelector(selectors[s]);
+					if (el) {
+						var inp = findInputInOrNear(el);
+						if (inp) return inp;
+					}
 				}
 
 				var allInputs = document.querySelectorAll('input[type="file"]');
 				for (var i = 0; i < allInputs.length; i++) {
 					var input = allInputs[i];
-					if (input.closest && input.closest('[data-testid="attach-sticker"], [data-testid*="sticker"], [aria-label*="sticker" i], [aria-label*="stiker" i]')) {
+					if (input.closest && input.closest('[data-testid*="sticker"], [aria-label*="sticker" i], [aria-label*="stiker" i]')) {
 						continue;
 					}
 					var accept = (input.getAttribute('accept') || '').toLowerCase();
@@ -633,28 +669,58 @@ func getInitScript(ua string) string {
 			}
 
 			function findDocumentInput() {
-				var container = document.querySelector(
-					'[data-testid="attach-document"], ' +
-					'li[data-testid*="document"], ' +
-					'[aria-label*="Document" i], ' +
-					'[aria-label*="Dokumen" i]'
-				);
-				if (container) {
-					var inp = container.querySelector('input[type="file"]');
-					if (inp) return inp;
+				var selectors = [
+					'li[data-testid*="attach-doc"]',
+					'li[data-testid*="document"]',
+					'[data-testid*="attach-doc"]',
+					'[data-testid*="document"]',
+					'[data-testid="mi-attach-document"]',
+					'[data-testid="attach-document"]',
+					'[data-icon="attach-document"]',
+					'[data-icon="document"]',
+					'[aria-label*="Document" i]',
+					'[aria-label*="Dokumen" i]',
+					'[aria-label*="Documento" i]',
+					'[aria-label*="Dokument" i]',
+					'[aria-label*="Belge" i]',
+					'[title*="Document" i]',
+					'[title*="Dokumen" i]'
+				];
+				for (var s = 0; s < selectors.length; s++) {
+					var el = document.querySelector(selectors[s]);
+					if (el) {
+						var inp = findInputInOrNear(el);
+						if (inp) return inp;
+					}
 				}
 
 				var allInputs = document.querySelectorAll('input[type="file"]');
 				for (var i = 0; i < allInputs.length; i++) {
 					var input = allInputs[i];
-					if (input.closest && input.closest('[data-testid="attach-sticker"], [data-testid="attach-image"]')) {
+					if (input.closest && input.closest('[data-testid*="sticker"], [data-testid*="image"], [data-testid*="media"], [aria-label*="sticker" i], [aria-label*="stiker" i]')) {
 						continue;
 					}
-					var accept = (input.getAttribute('accept') || '').toLowerCase();
-					if (accept === '*' || accept === '*/*' || accept === '' || accept.indexOf('document') !== -1 || accept.indexOf('application') !== -1) {
+					var accept = (input.getAttribute('accept') || '').toLowerCase().trim();
+					if (accept.indexOf('image/') !== -1 || accept.indexOf('video') !== -1) {
+						continue;
+					}
+					if (accept === '*' || accept === '*/*' || accept.indexOf('document') !== -1 || accept.indexOf('application') !== -1) {
 						return input;
 					}
 				}
+
+				var menu = document.querySelector('[data-testid*="attach-menu"], ul[role="menu"], [data-animate-dropdown-item="true"]');
+				if (menu) {
+					var menuInputs = menu.querySelectorAll('input[type="file"]');
+					for (var j = 0; j < menuInputs.length; j++) {
+						var mInput = menuInputs[j];
+						var mAccept = (mInput.getAttribute('accept') || '').toLowerCase().trim();
+						if (mAccept.indexOf('image/') === -1 && mAccept.indexOf('video') === -1) {
+							return mInput;
+						}
+					}
+				}
+
 				return null;
 			}
 
@@ -663,10 +729,17 @@ func getInitScript(ua string) string {
 				try {
 					var dt = new DataTransfer();
 					for (var i = 0; i < files.length; i++) dt.items.add(files[i]);
-					fileInput.files = dt.files;
-					if (!fileInput.files || fileInput.files.length !== files.length) return false;
-					fileInput.dispatchEvent(new Event('input', { bubbles: true }));
-					fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+					var setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'files');
+					if (setter && setter.set) {
+						setter.set.call(fileInput, dt.files);
+					} else {
+						fileInput.files = dt.files;
+					}
+					if (!fileInput.files || fileInput.files.length !== files.length) {
+						fileInput.files = dt.files;
+					}
+					fileInput.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+					fileInput.dispatchEvent(new Event('change', { bubbles: true, composed: true }));
 					return true;
 				} catch (err) {
 					return false;
@@ -676,25 +749,16 @@ func getInitScript(ua string) string {
 			function injectFiles(files, attempt, isMedia) {
 				if (isMedia === undefined) isMedia = areAllMediaFiles(files);
 
-				if (isMedia) {
-					var mediaBtn = document.querySelector('[data-testid="attach-image"], [aria-label*="Foto & video" i], [aria-label*="Photos & videos" i]');
-					if (mediaBtn) {
-						var inpM = mediaBtn.querySelector('input[type="file"]') || findMediaInput();
-						if (inpM && setFilesOnInput(inpM, files)) return true;
-					}
-				} else {
-					var docBtn = document.querySelector('[data-testid="attach-document"], [aria-label*="Dokumen" i], [aria-label*="Document" i]');
-					if (docBtn) {
-						var inpD = docBtn.querySelector('input[type="file"]') || findDocumentInput();
-						if (inpD && setFilesOnInput(inpD, files)) return true;
-					}
-				}
-
 				var targetInput = isMedia ? findMediaInput() : findDocumentInput();
 				if (targetInput && setFilesOnInput(targetInput, files)) {
 					return true;
 				}
-				if (attempt < 35) {
+
+				if (attempt < 40) {
+					if (attempt === 6) {
+						var attachBtn = findAttachButton();
+						if (attachBtn) attachBtn.click();
+					}
 					setTimeout(function() { injectFiles(files, attempt + 1, isMedia); }, 40);
 				}
 				return false;
@@ -716,14 +780,21 @@ func getInitScript(ua string) string {
 
 				var isMedia = areAllMediaFiles(files);
 
-				// Open the attach menu so the proper file input is mounted and activated
-				var attachBtn = findAttachButton();
-				if (attachBtn) {
-					attachBtn.click();
+				// Only click attach button if attach menu isn't already open
+				var isMenuOpen = !!document.querySelector(
+					'[data-testid*="attach-doc"], [data-testid*="attach-media"], ' +
+					'[data-testid="mi-attach-document"], [data-testid="mi-attach-media"], ' +
+					'li[data-testid*="document"], li[data-testid*="image"]'
+				);
+				if (!isMenuOpen) {
+					var attachBtn = findAttachButton();
+					if (attachBtn) {
+						attachBtn.click();
+					}
 				}
 
 				injectFiles(files, 0, isMedia);
-				setTimeout(function() { dropInProgress = false; }, 2000);
+				setTimeout(function() { dropInProgress = false; }, 2500);
 			}
 
 			document.addEventListener('dragenter', handleDragEnter, true);
