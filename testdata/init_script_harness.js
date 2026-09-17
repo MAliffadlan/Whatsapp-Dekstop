@@ -101,6 +101,7 @@ async function run(transform, envMutate, head) {
     entryPoints,
     visibleEntryPoints,
     opened: opened ? opened.id : null,
+    recoverable: (typeof window.__waRecoverable === 'function') ? window.__waRecoverable() : [],
   };
 }
 
@@ -118,6 +119,23 @@ const cases = [
   // control mounts. Before the fix the rail fallback mounted alongside it and
   // the user saw two identical gears.
   ['whatsapp header present', null, null, script, HEAD_WITH_HEADER],
+  // Pre-DOM injection (WebView2 AddScriptToExecuteOnDocumentCreated) where
+  // document.head and document.documentElement are both null at eval time.
+  ['null head and docEl', null,
+    (w) => {
+      let active = true;
+      const realHead = w.document.head;
+      const realDocEl = w.document.documentElement;
+      Object.defineProperty(w.document, 'head', {
+        get() { return active ? null : realHead; },
+        configurable: true,
+      });
+      Object.defineProperty(w.document, 'documentElement', {
+        get() { return active ? null : realDocEl; },
+        configurable: true,
+      });
+      setTimeout(() => { active = false; }, 20);
+    }, script],
 ];
 
 async function main() {
@@ -126,7 +144,14 @@ async function main() {
     const r = await run(transform, envMutate, head);
     const ok = r.entryPoints.length > 0 && !!r.opened;
     if (!ok) failures++;
-    console.log(`${ok ? 'GREEN' : 'RED  '}  ${label.padEnd(22)} entry=${r.entryPoints.join(',') || 'NONE'} opened=${r.opened || 'NOTHING'} uncaught=${r.threw}`);
+    console.log(`${ok ? 'GREEN' : 'RED  '}  ${label.padEnd(22)} entry=${r.entryPoints.join(',') || 'NONE'} opened=${r.opened || 'NOTHING'} uncaught=${r.threw} recoverable=[${(r.recoverable || []).join('; ')}]`);
+
+    const expectedOverlay = (label.includes('failure')) ? 'wa-recovery-overlay' : 'wa-settings-overlay';
+    const overlayOk = r.opened === expectedOverlay;
+    if (!overlayOk) {
+      failures++;
+      console.log(`RED    ${(label + ' overlay').padEnd(22)} got=${r.opened} (expected ${expectedOverlay})`);
+    }
 
     // Regression: a settings control hidden with display:none is fine, but two
     // simultaneously visible gears are not — that is the duplicate button users

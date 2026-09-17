@@ -176,7 +176,7 @@ func getInitScript(ua string) string {
 		// PDF plugin makes WhatsApp open a viewer that WKWebView cannot render.
 
 		// Native Notification Polyfill & ServiceWorker Notification Interceptor
-		(function() {
+		waRunModule('notifications', function() {
 			function dispatchNativeNotification(title, options) {
 				options = options || {};
 				var body = options.body || '';
@@ -213,10 +213,10 @@ func getInitScript(ua string) string {
 					};
 				}
 			} catch (e) {}
-		})();
+		});
 
 		// Robust HTML5 Media Autoplay & Inline Playback Support for Status/Stories and Videos
-		(function() {
+		waRunModule('media-playback', function() {
 			if (!window.HTMLMediaElement) return;
 
 			function prepareMedia(el) {
@@ -291,20 +291,27 @@ func getInitScript(ua string) string {
 					}
 					scheduleMediaScan();
 				});
-				var targetNode = document.documentElement || document.body;
-				if (targetNode) {
-					mediaObserver.observe(targetNode, { childList: true, subtree: true });
-					queueMediaRoot(targetNode);
-					scheduleMediaScan();
+				var targetNode = document.documentElement || document.body || document;
+				if (targetNode && targetNode.nodeType) {
+					try {
+						mediaObserver.observe(targetNode, { childList: true, subtree: true });
+						queueMediaRoot(targetNode);
+						scheduleMediaScan();
+					} catch (e) {}
 				} else {
 					document.addEventListener('DOMContentLoaded', function() {
-						mediaObserver.observe(document.body, { childList: true, subtree: true });
-						queueMediaRoot(document.body);
-						scheduleMediaScan();
+						var root = document.body || document.documentElement || document;
+						if (root && root.nodeType) {
+							try {
+								mediaObserver.observe(root, { childList: true, subtree: true });
+								queueMediaRoot(root);
+								scheduleMediaScan();
+							} catch (e) {}
+						}
 					});
 				}
 			}
-		})();
+		});
 
 		function isDocumentFileName(name) {
 			if (!name) return false;
@@ -529,7 +536,7 @@ func getInitScript(ua string) string {
 			return (Date.now() - lastUploadAt) < 6000;
 		}
 
-		(function() {
+		waRunModule('drag-drop-paste', function() {
 			var dragCounter = 0;
 			var dropInProgress = false;
 
@@ -785,7 +792,7 @@ func getInitScript(ua string) string {
 			document.addEventListener('dragleave', handleDragLeave, true);
 			document.addEventListener('dragover', handleDragOver, true);
 			document.addEventListener('drop', handleDrop, true);
-		})();
+		});
 
 		// Helper: Decode base64 dataURI to Uint8Array
 		function base64ToUint8Array(dataUri) {
@@ -1358,7 +1365,7 @@ func getInitScript(ua string) string {
 		};
 
 		// Zoom Keyboard Shortcuts (Cmd + / Cmd - / Cmd 0)
-		(function() {
+		waRunModule('zoom-shortcuts', function() {
 			var currentZoom = 1.0;
 			window.addEventListener('keydown', function(e) {
 				if (e.metaKey || e.ctrlKey) {
@@ -1377,10 +1384,10 @@ func getInitScript(ua string) string {
 					}
 				}
 			});
-		})();
+		});
 
 		// Dock Badge Unread Count Synchronizer
-		(function() {
+		waRunModule('dock-badge', function() {
 			var lastBadge = null;
 			function syncBadge() {
 				var title = document.title || '';
@@ -1394,15 +1401,19 @@ func getInitScript(ua string) string {
 				}
 			}
 			var titleEl = document.querySelector('title');
-			if (titleEl) {
-				new MutationObserver(syncBadge).observe(titleEl, { childList: true, characterData: true, subtree: true });
+			if (titleEl && titleEl.nodeType) {
+				try {
+					new MutationObserver(syncBadge).observe(titleEl, { childList: true, characterData: true, subtree: true });
+				} catch (e) {
+					setInterval(syncBadge, 3000);
+				}
 			} else {
 				setInterval(syncBadge, 3000);
 			}
-		})();
+		});
 
 		// Memory Optimization: Idle Garbage Collection
-		(function() {
+		waRunModule('memory-opt', function() {
 			var releaseTimer = null;
 			document.addEventListener('visibilitychange', function() {
 				clearTimeout(releaseTimer);
@@ -1416,10 +1427,10 @@ func getInitScript(ua string) string {
 					if (window.releaseMemoryNative) window.releaseMemoryNative();
 				}, 5000);
 			});
-		})();
+		});
 
 		// Debounced window resize persistence
-		(function() {
+		waRunModule('window-resize', function() {
 			var resizeTimer = null;
 			window.addEventListener('resize', function() {
 				clearTimeout(resizeTimer);
@@ -1433,7 +1444,7 @@ func getInitScript(ua string) string {
 					}
 				}, 500);
 			});
-		})();
+		});
 
 		// Floating HUD Toast for User Feedback. Optional action renders a
 		// clickable button inside the toast (e.g. "Open folder" after a
@@ -1475,12 +1486,13 @@ func getInitScript(ua string) string {
 				toast.style.pointerEvents = 'none';
 			}, action ? 6000 : 2500);
 		}
+		window.showFloatingToast = showFloatingToast;
 
 		// Issue reporter: page errors are buffered locally (never uploaded),
 		// and the Control Center offers a one-click pre-filled GitHub issue.
 		// Nothing leaves the machine until the user presses Report — the
 		// browser then shows the composed issue for review before submitting.
-		(function() {
+		waRunModule('diagnostics-buffer', function() {
 			window.__waMeta = { ver: '__WA_APP_VERSION__', platform: '` + runtime.GOOS + `' };
 
 			var waErrBuf = [];
@@ -1560,10 +1572,10 @@ func getInitScript(ua string) string {
 					});
 				} catch (e) {}
 			}, 10000);
-		})();
+		});
 
 		// Privacy Mode Toggle (Cmd + Shift + P)
-		(function() {
+		waRunModule('privacy-mode', function() {
 			var isPrivacyActive = false;
 			var styleEl = document.createElement('style');
 			styleEl.id = 'whatsapp-privacy-style';
@@ -1612,25 +1624,17 @@ func getInitScript(ua string) string {
 				'.privacy-mode #main [data-testid="msg-container"]:hover img,',
 				'.privacy-mode #main [data-testid="msg-container"]:hover video',
 				'{ filter: none !important; }',
-				// Layer 3: conversation header name redacted as a solid bar (like
-				// a marker pen), hover the header to reveal. Timestamps spared.
-				'.privacy-mode #main header span:not([data-wa-time])',
-				'{ color: transparent !important; text-shadow: none !important; background: #000 !important; border-radius: 4px; }',
-				'.privacy-mode #main header:hover span:not([data-wa-time])',
-				'{ color: inherit !important; text-shadow: none !important; background: transparent !important; }',
-				// Layer 4: fullscreen media viewer stays fully hidden while
-				// privacy is on (one layer, no hover needed there).
-				'.privacy-mode [data-testid="media-viewer"]',
+				// Layer 3: optional avatar blur (.blur-avatars on <html>).
+				// Covers all chat-list avatars AND the active chat's header avatar
+				// without needing separate observers.
+				'.privacy-mode.blur-avatars #pane-side img,',
+				'.privacy-mode.blur-avatars [data-testid="chat-list"] img,',
+				'.privacy-mode.blur-avatars #main header img,',
+				'.privacy-mode.blur-avatars #main .message-in img,',
+				'.privacy-mode.blur-avatars #main .message-out img',
 				'{ filter: blur(12px) !important; }',
-				// Layer 5: profile photos, only when the "blur avatars" setting
-				// is on (html.blur-avatars). Hovering the row/message reveals.
-				'.privacy-mode.blur-avatars #pane-side [role="row"] img,',
-				'.privacy-mode.blur-avatars #side header img,',
-				'.privacy-mode.blur-avatars #main header img',
-				'{ filter: blur(8px) !important; }',
-				'.privacy-mode.blur-avatars #pane-side [role="row"] img:hover,',
 				'.privacy-mode.blur-avatars #pane-side [role="row"]:hover img,',
-				'.privacy-mode.blur-avatars #side header img:hover,',
+				'.privacy-mode.blur-avatars [data-testid="chat-list"] [role="row"]:hover img,',
 				'.privacy-mode.blur-avatars #main header img:hover,',
 				'.privacy-mode.blur-avatars #main .message-in:hover img,',
 				'.privacy-mode.blur-avatars #main .message-out:hover img',
@@ -1646,9 +1650,11 @@ func getInitScript(ua string) string {
 				// All privacy selectors are descendant selectors, so they
 				// match identically from the <html> ancestor.
 				var rootEl = document.documentElement;
+				if (!rootEl) return isPrivacyActive;
 				if (isPrivacyActive) {
 					if (!document.getElementById('whatsapp-privacy-style')) {
-						document.head.appendChild(styleEl);
+						var h = document.head || rootEl;
+						if (h) h.appendChild(styleEl);
 					}
 					rootEl.classList.add('privacy-mode');
 					if (!silent) showFloatingToast('🔒 Privacy Mode: Enabled');
@@ -1670,7 +1676,7 @@ func getInitScript(ua string) string {
 			// "Blur profile photos" setting: gates the .blur-avatars layer.
 			// Applied on <html> next to .privacy-mode; persisted natively.
 			window.isBlurAvatars = function() {
-				return document.documentElement.classList.contains('blur-avatars');
+				return !!(document.documentElement && document.documentElement.classList && document.documentElement.classList.contains('blur-avatars'));
 			};
 
 			// Timestamp sparing: tag short clock/day strings so the CSS above
@@ -1703,8 +1709,10 @@ func getInitScript(ua string) string {
 			}, 3000);
 			window.setBlurAvatars = function(on) {
 				on = !!on;
-				if (on) document.documentElement.classList.add('blur-avatars');
-				else document.documentElement.classList.remove('blur-avatars');
+				if (document.documentElement && document.documentElement.classList) {
+					if (on) document.documentElement.classList.add('blur-avatars');
+					else document.documentElement.classList.remove('blur-avatars');
+				}
 				if (window.setBlurAvatarsNative) {
 					Promise.resolve(window.setBlurAvatarsNative(on)).catch(function() {});
 				}
@@ -1712,7 +1720,9 @@ func getInitScript(ua string) string {
 			};
 			if (window.getBlurAvatarsNative) {
 				window.getBlurAvatarsNative().then(function(on) {
-					if (on) document.documentElement.classList.add('blur-avatars');
+					if (on && document.documentElement && document.documentElement.classList) {
+						document.documentElement.classList.add('blur-avatars');
+					}
 				}).catch(function() {});
 			}
 
@@ -1730,11 +1740,13 @@ func getInitScript(ua string) string {
 			function isAutoLockEnabled() { return autoLockEnabled; }
 			function setAutoLockEnabled(on) {
 				autoLockEnabled = !!on;
-				storageSet(AUTO_LOCK_KEY, on ? '1' : '0');
-				if (!on && autoLocked) { autoLocked = false; applyPrivacyMode(false, true); }
-				if (on) resetIdleTimer();
+				storageSet(AUTO_LOCK_KEY, autoLockEnabled ? '1' : '0');
+				if (!autoLockEnabled && autoLocked) unlockFromIdle();
+				else resetIdleTimer();
 				return autoLockEnabled;
 			}
+			window.isAutoLockEnabled = isAutoLockEnabled;
+			window.setAutoLockEnabled = setAutoLockEnabled;
 			window.isPrivacyAutoLock = isAutoLockEnabled;
 			window.setPrivacyAutoLock = setAutoLockEnabled;
 
@@ -1749,11 +1761,9 @@ func getInitScript(ua string) string {
 				applyPrivacyMode(false, true);
 			}
 			function resetIdleTimer() {
+				if (autoLocked) unlockFromIdle();
 				clearTimeout(idleTimer);
-				if (!autoLockEnabled) return;
-				// If an idle-lock is active, any activity lifts it immediately.
-				unlockFromIdle();
-				idleTimer = setTimeout(lockForIdle, IDLE_MS);
+				if (autoLockEnabled) idleTimer = setTimeout(lockForIdle, IDLE_MS);
 			}
 
 			var activityEvents = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'wheel'];
@@ -1776,10 +1786,10 @@ func getInitScript(ua string) string {
 					window.togglePrivacyMode();
 				}
 			}, true);
-		})();
+		});
 
 		// Always on Top Toggle (Cmd/Ctrl + Shift + T)
-		(function() {
+		waRunModule('always-on-top', function() {
 			var isPinnedState = false;
 			window.toggleAlwaysOnTop = function() {
 				if (window.toggleAlwaysOnTopNative) {
@@ -1802,7 +1812,7 @@ func getInitScript(ua string) string {
 					window.toggleAlwaysOnTop();
 				}
 			}, true);
-		})();
+		});
 
 		// Reload and Refresh Functions (Cmd/Ctrl + R, Cmd/Ctrl + Shift + R, F5)
 		window.reloadWhatsApp = function() {
@@ -1836,7 +1846,7 @@ func getInitScript(ua string) string {
 		}, true);
 
 		// Audio Mute Toggle (Cmd/Ctrl + Shift + M)
-		(function() {
+		waRunModule('audio-mute', function() {
 			var isMuted = false;
 			window.toggleMuteAudio = function() {
 				isMuted = !isMuted;
@@ -1862,10 +1872,10 @@ func getInitScript(ua string) string {
 					e.target.muted = true;
 				}
 			}, true);
-		})();
+		});
 
 		// Auto-Start at Login Toggle (Cmd/Ctrl + Shift + S)
-		(function() {
+		waRunModule('launch-on-boot', function() {
 			var isAutoStartState = false;
 			window.toggleAutoStart = function() {
 				if (window.toggleAutoStartNative) {
@@ -1888,13 +1898,15 @@ func getInitScript(ua string) string {
 					window.toggleAutoStart();
 				}
 			}, true);
-		})();
+		});
 
 		// In-App Auto Updater UI and Handlers
-		(function() {
+		waRunModule('app-updater', function() {
 			window.showUpdateBanner = function(latestVersion, releaseTitle, downloadUrl) {
 				if (document.getElementById('wa-update-banner')) return;
-				if (sessionStorage.getItem('dismissed_update_' + latestVersion) === 'true') return;
+				try {
+					if (sessionStorage.getItem('dismissed_update_' + latestVersion) === 'true') return;
+				} catch (e) {}
 
 				if (!document.getElementById('wa-update-anim')) {
 					var animStyle = document.createElement('style');
@@ -2052,10 +2064,10 @@ func getInitScript(ua string) string {
 					window.triggerCheckForUpdate();
 				}
 			}, true);
-		})();
+		});
 
 		// Dynamic Responsive Desktop Layout (enables seamless shrinking and expanding)
-		(function() {
+		waRunModule('responsive-css', function() {
 			var respStyle = document.createElement('style');
 			respStyle.id = 'whatsapp-desktop-responsive';
 			respStyle.textContent = '' +
@@ -2073,25 +2085,28 @@ func getInitScript(ua string) string {
 			// Once <head> exists the style never needs re-injection, so poll only
 			// via a cheap head observer instead of an endless 2.5s interval.
 			function injectResponsive() {
-				if (document.head && !document.getElementById('whatsapp-desktop-responsive')) {
-					document.head.appendChild(respStyle);
-					observer.disconnect();
+				var targetHead = document.head || (document.documentElement && document.documentElement.querySelector && document.documentElement.querySelector('head'));
+				if (targetHead && !document.getElementById('whatsapp-desktop-responsive')) {
+					targetHead.appendChild(respStyle);
+					try { observer.disconnect(); } catch (e) {}
 				}
 			}
 			var observer = new MutationObserver(injectResponsive);
 			if (document.head) {
 				injectResponsive();
-			} else {
-				observer.observe(document.documentElement, { childList: true });
+			} else if (document.documentElement && document.documentElement.nodeType) {
+				try { observer.observe(document.documentElement, { childList: true }); } catch (e) {}
+			} else if (document && document.nodeType) {
+				try { observer.observe(document, { childList: true, subtree: true }); } catch (e) {}
 			}
 			document.addEventListener('DOMContentLoaded', function() {
 				injectResponsive();
-				observer.disconnect();
+				try { observer.disconnect(); } catch (e) {}
 			}, { once: true });
-		})();
+		});
 
 		// Native Spell Check for textareas (macOS NSSpellChecker, Windows ISpellCheckProvider, Linux GTK)
-		(function() {
+		waRunModule('spellcheck', function() {
 			var spellCheckEnabled = true;
 			var spellCheckLang = 'auto';
 
@@ -2156,7 +2171,10 @@ func getInitScript(ua string) string {
 					}
 					scheduleSpellCheck();
 				});
-				observer.observe(document.body, { childList: true, subtree: true });
+				var target = document.body || document.documentElement || document;
+				if (target && target.nodeType) {
+					try { observer.observe(target, { childList: true, subtree: true }); } catch (e) {}
+				}
 
 				// Also re-check on navigation
 				var lastUrl = location.href;
@@ -2187,10 +2205,10 @@ func getInitScript(ua string) string {
 			} else {
 				initSpellCheck();
 			}
-		})();
+		});
 
 		// Context Menu: Search/Translate selected text
-		(function() {
+		waRunModule('context-menu', function() {
 			var contextMenu = null;
 			var lastSelection = '';
 			var lastSelectionRect = null;
@@ -2214,7 +2232,8 @@ func getInitScript(ua string) string {
 					'  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:#8696a0;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>' +
 					'  <span>Copy</span>' +
 					'</div>';
-				document.body.appendChild(contextMenu);
+				var parent = document.body || document.documentElement;
+				if (parent) parent.appendChild(contextMenu);
 
 				contextMenu.querySelectorAll('.wa-cm-item').forEach(function(item) {
 					item.addEventListener('mouseenter', function() {
@@ -2296,10 +2315,10 @@ func getInitScript(ua string) string {
 			document.addEventListener('touchmove', function() {
 				if (longPressTimer) clearTimeout(longPressTimer);
 			});
-		})();
+		});
 
 		// Automatic Download & Document Preview Interceptor for Chat Files & Media
-		(function() {
+		waRunModule('document-viewer', function() {
 			var activeDownloadKeys = Object.create(null);
 
 			function downloadRequestKey(href, filename) {
@@ -2589,21 +2608,21 @@ func getInitScript(ua string) string {
 			});
 
 			function initViewerObserver() {
-				var target = document.body || document.documentElement;
-				if (target) {
-					viewerObserver.observe(target, { childList: true, subtree: true });
+				var target = document.body || document.documentElement || document;
+				if (target && target.nodeType) {
+					try { viewerObserver.observe(target, { childList: true, subtree: true }); } catch (e) {}
 				} else {
 					document.addEventListener('DOMContentLoaded', initViewerObserver, { once: true });
 				}
 			}
 			initViewerObserver();
-		})();
+		});
 
 		// "Saved to disk" badges on the Media/Docs panel. WhatsApp has no notion
 		// of local downloads, so bridge it: for each document/media item shown in
 		// the all-chats panel, check whether the same filename exists in the
 		// configured downloads folder and tag it with a small green check.
-		(function() {
+		waRunModule('saved-badges', function() {
 			var savedScanQueued = false;
 			var lastSavedScanAt = 0;
 			var savedCache = {};
@@ -2712,8 +2731,10 @@ func getInitScript(ua string) string {
 				if (panelMutationRelevant(muts)) scheduleScan();
 			});
 			function watchRoot() {
-				var root = document.body;
-				if (root) panelObserver.observe(root, { childList: true, subtree: true });
+				var root = document.body || document.documentElement || document;
+				if (root && root.nodeType) {
+					try { panelObserver.observe(root, { childList: true, subtree: true }); } catch (e) {}
+				}
 			}
 			watchRoot();
 			document.addEventListener('DOMContentLoaded', watchRoot, { once: true });
@@ -2723,10 +2744,10 @@ func getInitScript(ua string) string {
 					setTimeout(scheduleScan, 300);
 				}
 			}, true);
-		})();
+		});
 
 		// Theme Manager, In-Flow Header Toolbar Button & Control Center Modal
-		(function() {
+		waRunModule('settings-modal', function() {
 			var isMac = (__WA_GOOS === 'darwin') || (navigator.platform && navigator.platform.toUpperCase().indexOf('MAC') >= 0);
 			var currentTheme = 'dark';
 			var themeChoiceVersion = 0;
@@ -2751,6 +2772,7 @@ func getInitScript(ua string) string {
 				var mode = isDark ? 'dark' : 'light';
 				var opposite = isDark ? 'light' : 'dark';
 				var root = document.documentElement;
+				if (!root) return;
 				root.classList.add(mode);
 				root.classList.remove(opposite);
 				root.setAttribute('data-theme', mode);
@@ -2760,6 +2782,7 @@ func getInitScript(ua string) string {
 					document.body.classList.add(mode);
 					document.body.classList.remove(opposite);
 					document.body.setAttribute('data-theme', mode);
+					document.body.setAttribute('data-wa-desk-theme', mode);
 					document.body.style.colorScheme = mode;
 				}
 			}
@@ -2772,8 +2795,11 @@ func getInitScript(ua string) string {
 					themeStyle.textContent = [
 						'html[data-wa-desk-theme="light"], html[data-wa-desk-theme="light"] body { color-scheme: light !important; background: #f7f9fa !important; }',
 						'html[data-wa-desk-theme="light"] #app, html[data-wa-desk-theme="light"] #side, html[data-wa-desk-theme="light"] #pane-side, html[data-wa-desk-theme="light"] #main { color-scheme: light !important; }'
-					].join('\\n');
-					(document.head || document.documentElement).appendChild(themeStyle);
+					].join('\n');
+					var target = document.head || document.documentElement;
+					if (target) {
+						target.appendChild(themeStyle);
+					}
 				}
 			}
 
@@ -3034,10 +3060,12 @@ func getInitScript(ua string) string {
 						// Narrow the observed root once the header exists.
 						if (!toolbarNarrowed) {
 							var hdr = document.querySelector('#side header');
-							if (hdr) {
+							if (hdr && hdr.nodeType) {
 								toolbarNarrowed = true;
-								toolbarObserver.disconnect();
-								toolbarObserver.observe(hdr, { childList: true, subtree: true });
+								try {
+									toolbarObserver.disconnect();
+									toolbarObserver.observe(hdr, { childList: true, subtree: true });
+								} catch (e) {}
 							}
 						}
 					});
@@ -3046,11 +3074,13 @@ func getInitScript(ua string) string {
 				// Prefer the header itself: the chat list churns constantly and
 				// never affects our button. Fall back to #side, then body, and
 				// narrow down to the header as soon as it exists.
-				var root = document.querySelector('#side header') || document.querySelector('#side') || document.body;
-				if (root) {
+				var root = document.querySelector('#side header') || document.querySelector('#side') || document.body || document.documentElement || document;
+				if (root && root.nodeType) {
 					toolbarNarrowed = !!document.querySelector('#side header');
-					toolbarObserver.disconnect();
-					toolbarObserver.observe(root, { childList: true, subtree: true });
+					try {
+						toolbarObserver.disconnect();
+						toolbarObserver.observe(root, { childList: true, subtree: true });
+					} catch (e) {}
 				}
 			}
 			watchToolbarRoot();
@@ -3580,7 +3610,7 @@ func getInitScript(ua string) string {
 				}
 			};
 
-		})();
+		});
 
 		} catch (waInitError) {
 			// A module above failed (an engine API difference, denied

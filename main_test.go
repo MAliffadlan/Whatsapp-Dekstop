@@ -673,4 +673,3 @@ func TestDragAndDropUploadStabilization(t *testing.T) {
 		}
 	}
 }
-

@@ -20,7 +20,7 @@ The screenshots use blurred chat content to protect personal information.
 
 ## Download
 
-Latest published release: **v1.5.9.3**
+Latest published release: **v1.5.9.4**
 
 | Platform | Download |
 | --- | --- |
@@ -29,7 +29,7 @@ Latest published release: **v1.5.9.3**
 | Debian/Ubuntu x64 | [DEB](https://github.com/vianziro/Whatsapp-Dekstop/releases/download/v1.5.9.2/WhatsApp-Desk-Linux-amd64.deb) · [tar.gz](https://github.com/vianziro/Whatsapp-Dekstop/releases/download/v1.5.9.2/WhatsApp-Desk-Linux-x64.tar.gz) |
 | Fedora/RHEL x64 | [RPM](https://github.com/vianziro/Whatsapp-Dekstop/releases/download/v1.5.9.2/WhatsApp-Desk-Fedora-x64.rpm) · [portable tar.gz](https://github.com/vianziro/Whatsapp-Dekstop/releases/download/v1.5.9.2/WhatsApp-Desk-Linux-x64.tar.gz) |
 
-Linux packages are pinned to **v1.5.9.2**: v1.5.9.3 ships macOS and Windows only, and the Linux build of this version is still being verified. The pinned links above are known-good, and Linux users can also [browse every release](https://github.com/vianziro/Whatsapp-Dekstop/releases). The updater only offers an architecture-compatible package; it never substitutes an x64 build on arm64.
+Linux packages are pinned to **v1.5.9.2**: v1.5.9.4 ships macOS and Windows only, and the Linux build of this version is still being verified. The pinned links above are known-good, and Linux users can also [browse every release](https://github.com/vianziro/Whatsapp-Dekstop/releases). The updater only offers an architecture-compatible package; it never substitutes an x64 build on arm64.
 
 ### Verifying your download
 
@@ -128,6 +128,12 @@ Default profile locations:
 - macOS: `~/Library/Application Support/WhatsAppDesk/UserData/`
 - Windows: `%APPDATA%\WhatsAppDesk\UserData\`
 - Linux: `~/.config/whatsapp-desk/`
+
+## Version 1.5.9.4
+
+- Fixes MutationObserver initialization crash on Windows WebView2 (#12): guards documentElement and head during pre-DOM script creation so the Settings modal opens reliably instead of triggering recovery mode.
+- Isolates runtime injected modules (`waRunModule`): individual DOM observation or feature errors can no longer abort other modules or prevent Settings and shortcuts from loading.
+- Windows installer setup wizard and portable binary updated.
 
 ## Version 1.5.9.3
 
