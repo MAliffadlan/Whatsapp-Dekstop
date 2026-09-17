@@ -20,7 +20,7 @@ The screenshots use blurred chat content to protect personal information.
 
 ## Download
 
-Latest published release: **v1.5.9.2**
+Latest published release: **v1.5.9.3**
 
 | Platform | Download |
 | --- | --- |
@@ -128,6 +128,13 @@ Default profile locations:
 - macOS: `~/Library/Application Support/WhatsAppDesk/UserData/`
 - Windows: `%APPDATA%\WhatsAppDesk\UserData\`
 - Linux: `~/.config/whatsapp-desk/`
+
+## Version 1.5.9.3
+
+- Settings now appears exactly once: the rail fallback and the last-resort launcher stay hidden while the header control is visible, so no duplicate gear can appear.
+- Windows installer is now a full setup wizard with branded graphics, Start Menu and desktop shortcuts, and a proper Apps & features entry with uninstall. The portable EXE remains available.
+- Restores the last-resort Settings launcher when the other entry points fail, so the panel stays reachable.
+- Fixes per-monitor window placement: each display remembers its own position and size, and a frame from a disconnected monitor is never restored off-screen.
 
 ## Version 1.5.9.2
 

@@ -22,12 +22,44 @@ if (!scriptPath) {
 }
 const script = fs.readFileSync(scriptPath, 'utf8');
 
-const HEAD = '<!doctype html><html><head></head><body><div id="app"><div id="side"></div></div></body></html>';
+// Two DOM shapes. The bare one has no header, so the injected toolbar control
+// cannot mount and the last-resort button takes over. The header variant looks
+// like real WhatsApp Web, which is the shape that exposed the duplicate-gear
+// bug: toolbar control present AND rail fallback present simultaneously.
+const HEAD_BARE = '<!doctype html><html><head></head><body><div id="app"><div id="side"></div></div></body></html>';
+const HEAD_WITH_HEADER =
+  '<!doctype html><html><head></head><body><div id="app"><div id="side">' +
+  '<header><div></div><div id="wa-header-actions"></div></header>' +
+  '</div></div></body></html>';
 const BRIDGES = ['getDownloadDirNative', 'openDownloadDirNative', 'sendNativeNotification', 'openExternalLink'];
 
-function run(transform, envMutate) {
+// jsdom reports 0x0 for every getBoundingClientRect, which would make the real
+// visibility check treat every element as hidden. Return a plausible rect for
+// elements that are not explicitly hidden, so the script's own isElementVisible
+// logic is what decides what the user sees.
+function patchLayout(window) {
+  window.Element.prototype.getBoundingClientRect = function() {
+    const cs = window.getComputedStyle(this);
+    const hidden = cs.display === 'none' || cs.visibility === 'hidden' || cs.opacity === '0';
+    const size = hidden ? 0 : 40;
+    return { x: 0, y: 0, width: size, height: size, top: 0, left: 0, right: size, bottom: size };
+  };
+}
+
+// The rail fallback is mounted from a requestAnimationFrame callback, so the
+// DOM must be sampled after at least one frame. Sampling synchronously right
+// after eval made an earlier version of this check pass even when two gears
+// were on screen.
+function nextFrame(window) {
+  return new Promise((resolve) => {
+    if (window.requestAnimationFrame) window.requestAnimationFrame(() => resolve());
+    else setTimeout(resolve, 20);
+  });
+}
+
+async function run(transform, envMutate, head) {
   const src = transform ? transform(script) : script;
-  const dom = new JSDOM(HEAD, {
+  const dom = new JSDOM(head || HEAD_BARE, {
     runScripts: 'outside-only',
     pretendToBeVisual: true,
     url: 'https://web.whatsapp.com/',
@@ -35,19 +67,41 @@ function run(transform, envMutate) {
   });
   const { window } = dom;
   for (const n of BRIDGES) window[n] = () => Promise.resolve('');
+  patchLayout(window);
   if (envMutate) envMutate(window);
 
   let threw = null;
   try { window.eval(src); } catch (e) { threw = e; }
+  // Let the deferred entry-point mounts run before inspecting the DOM.
+  await nextFrame(window);
+  await nextFrame(window);
+  await new Promise((r) => setTimeout(r, 30));
 
   const doc = window.document;
-  const entryPoints = ['wa-emergency-settings-btn', 'wa-settings-fallback-btn', 'wa-toolbar-settings-btn']
-    .filter((id) => doc.getElementById(id));
+  const SETTINGS_IDS = ['wa-emergency-settings-btn', 'wa-settings-fallback-btn', 'wa-toolbar-settings-btn'];
+  const entryPoints = SETTINGS_IDS.filter((id) => doc.getElementById(id));
+  // Ids the user can actually see, judged by the same rules the script itself
+  // uses: an element hidden with display:none / visibility:hidden / opacity:0
+  // does not count. Presence alone is not enough — the duplicate-gear bug had
+  // two elements present AND visible at once.
+  const isShown = (el) => {
+    if (!el) return false;
+    const cs = window.getComputedStyle(el);
+    if (cs.display === 'none' || cs.visibility === 'hidden' || cs.opacity === '0') return false;
+    const r = el.getBoundingClientRect();
+    return r.width > 0 && r.height > 0;
+  };
+  const visibleEntryPoints = SETTINGS_IDS.filter((id) => isShown(doc.getElementById(id)));
 
   window.dispatchEvent(new window.KeyboardEvent('keydown', { key: ',', ctrlKey: true, bubbles: true, cancelable: true }));
   const opened = doc.getElementById('wa-settings-overlay') || doc.getElementById('wa-recovery-overlay');
 
-  return { threw: threw ? String(threw).split('\n')[0] : 'no', entryPoints, opened: opened ? opened.id : null };
+  return {
+    threw: threw ? String(threw).split('\n')[0] : 'no',
+    entryPoints,
+    visibleEntryPoints,
+    opened: opened ? opened.id : null,
+  };
 }
 
 const cases = [
@@ -60,19 +114,41 @@ const cases = [
     (w) => Object.defineProperty(w, 'localStorage', {
       get() { throw new Error('SecurityError: access denied'); }, configurable: true,
     }), script],
+  // The real WhatsApp Web shape: a header exists, so the in-flow toolbar
+  // control mounts. Before the fix the rail fallback mounted alongside it and
+  // the user saw two identical gears.
+  ['whatsapp header present', null, null, script, HEAD_WITH_HEADER],
 ];
 
-let failures = 0;
-for (const [label, transform, envMutate] of cases) {
-  const r = run(transform, envMutate);
-  const ok = r.entryPoints.length > 0 && !!r.opened;
-  if (!ok) failures++;
-  console.log(`${ok ? 'GREEN' : 'RED  '}  ${label.padEnd(22)} entry=${r.entryPoints.join(',') || 'NONE'} opened=${r.opened || 'NOTHING'} uncaught=${r.threw}`);
+async function main() {
+  let failures = 0;
+  for (const [label, transform, envMutate, , head] of cases) {
+    const r = await run(transform, envMutate, head);
+    const ok = r.entryPoints.length > 0 && !!r.opened;
+    if (!ok) failures++;
+    console.log(`${ok ? 'GREEN' : 'RED  '}  ${label.padEnd(22)} entry=${r.entryPoints.join(',') || 'NONE'} opened=${r.opened || 'NOTHING'} uncaught=${r.threw}`);
+
+    // Regression: a settings control hidden with display:none is fine, but two
+    // simultaneously visible gears are not — that is the duplicate button users
+    // hit when the header control and the rail fallback were both on screen.
+    const visible = r.visibleEntryPoints || [];
+    if (visible.length > 1) {
+      failures++;
+      console.log(`RED    ${'duplicate settings gear'.padEnd(22)} visible=${visible.join(',')} (expected at most one)`);
+    } else {
+      console.log(`GREEN  ${'single settings gear'.padEnd(22)} visible=${visible.join(',') || 'NONE'}`);
+    }
+  }
+
+  if (failures) {
+    console.log(`\nFAIL: ${failures} scenario(s) leave the user with no (or duplicate) Settings entry point.`);
+    process.exit(1);
+  }
+  console.log('\nPASS: no single injected-script failure removes the Settings entry point or the Ctrl+, shortcut.');
+  process.exit(0);
 }
 
-if (failures) {
-  console.log(`\nFAIL: ${failures} scenario(s) leave the user with no Settings entry point.`);
+main().catch((e) => {
+  console.error('harness error:', e && e.stack ? e.stack : e);
   process.exit(1);
-}
-console.log('\nPASS: no single injected-script failure removes the Settings entry point or the Ctrl+, shortcut.');
-process.exit(0);
+});

@@ -3,7 +3,7 @@ set -e
 
 APP_NAME="whatsapp-desk"
 DISPLAY_NAME="WhatsApp Desk"
-VERSION="${1:-${WA_DESK_VERSION:-1.5.9.2}}"
+VERSION="${1:-${WA_DESK_VERSION:-1.5.9.3}}"
 OUTPUT_DIR="dist_linux"
 
 # Derive the target architecture from the Go toolchain instead of hardcoding it.

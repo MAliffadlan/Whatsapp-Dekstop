@@ -17,7 +17,9 @@ whatsapp-desktop
 *.rpm
 *.deb
 dist_linux*/
+dist_win/
 rpms*/
+*Setup.exe
 .gocache/
 .video_agent/
 

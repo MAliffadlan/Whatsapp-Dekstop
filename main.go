@@ -2758,13 +2758,18 @@ func getInitScript(ua string) string {
 			}
 
 			// Keep one compact Settings control in the left rail. Header content is
-			// routinely rebuilt by WhatsApp; the rail control must remain available
-			// even when a header button exists but is clipped or invisible.
+			// routinely rebuilt by WhatsApp, so the rail control exists as a
+			// safety net — but it must stay hidden while the header button is
+			// present and visible, otherwise the user sees two identical gears.
 			function ensureSettingsFallback() {
 				var headerButton = document.getElementById('wa-toolbar-settings-btn');
+				var headerVisible = isElementVisible(headerButton);
 				var fallback = document.getElementById('wa-settings-fallback-btn');
 				if (fallback) {
-					fallback.setAttribute('data-header-settings-visible', isElementVisible(headerButton) ? 'true' : 'false');
+					fallback.setAttribute('data-header-settings-visible', headerVisible ? 'true' : 'false');
+					// Hide the rail control whenever the header button works.
+					fallback.style.display = headerVisible ? 'none' : 'inline-flex';
+					if (window.__waRecheckEmergencySettings) window.__waRecheckEmergencySettings();
 					return;
 				}
 				if (!document.body) return;
@@ -2773,9 +2778,12 @@ func getInitScript(ua string) string {
 				fallback.type = 'button';
 				fallback.setAttribute('aria-label', 'Open Settings and Controls');
 				fallback.title = 'Settings & Controls (' + (isMac ? 'Cmd' : 'Ctrl') + ' + ,)';
-				fallback.innerHTML = '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2-2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>';
+				fallback.innerHTML = '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>';
 				fallback.style.cssText = 'position:fixed;left:18px;bottom:96px;z-index:9999998;width:40px;height:40px;padding:0;display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(134,150,160,.45);border-radius:50%;background:#111b21;color:#aebac1;cursor:pointer;';
-				fallback.setAttribute('data-header-settings-visible', isElementVisible(headerButton) ? 'true' : 'false');
+				fallback.setAttribute('data-header-settings-visible', headerVisible ? 'true' : 'false');
+				// Only visible when the header button is missing or unusable.
+				fallback.style.display = headerVisible ? 'none' : 'inline-flex';
+				if (window.__waRecheckEmergencySettings) window.__waRecheckEmergencySettings();
 				window.syncRailSettingsBtnTheme = function(isDark) {
 					fallback.style.background = isDark ? '#111b21' : '#ffffff';
 					fallback.style.color = isDark ? '#aebac1' : '#54656f';
@@ -2792,7 +2800,11 @@ func getInitScript(ua string) string {
 
 			function ensureSettingsEntryPoints() {
 				injectHeaderToolbarBtn();
-				ensureSettingsFallback();
+				// A button injected in this same tick has not been laid out yet:
+				// getBoundingClientRect() is still 0x0, so isElementVisible would
+				// report "hidden" and wrongly reveal the rail fallback. Re-check
+				// on the next frame, when the header button has real geometry.
+				requestAnimationFrame(ensureSettingsFallback);
 			}
 
 			ensureSettingsEntryPoints();
@@ -2809,21 +2821,26 @@ func getInitScript(ua string) string {
 			var toolbarObserver = new MutationObserver(function() {
 				if (toolbarCheckQueued) return;
 				toolbarCheckQueued = true;
-				requestAnimationFrame(function() {
-					toolbarCheckQueued = false;
-					if (!document.getElementById('wa-toolbar-settings-btn')) {
-						ensureSettingsEntryPoints();
-					}
-					// Narrow the observed root once the header exists.
-					if (!toolbarNarrowed) {
-						var hdr = document.querySelector('#side header');
-						if (hdr) {
-							toolbarNarrowed = true;
-							toolbarObserver.disconnect();
-							toolbarObserver.observe(hdr, { childList: true, subtree: true });
+					requestAnimationFrame(function() {
+						toolbarCheckQueued = false;
+						// Re-evaluate on any header change: the toolbar button may
+						// have been dropped (needs re-injection) or may have become
+						// hidden/clipped (rail fallback must take over). Checking the
+						// visibility too is what keeps exactly one gear on screen.
+						var headerButton = document.getElementById('wa-toolbar-settings-btn');
+						if (!headerButton || !isElementVisible(headerButton)) {
+							ensureSettingsEntryPoints();
 						}
-					}
-				});
+						// Narrow the observed root once the header exists.
+						if (!toolbarNarrowed) {
+							var hdr = document.querySelector('#side header');
+							if (hdr) {
+								toolbarNarrowed = true;
+								toolbarObserver.disconnect();
+								toolbarObserver.observe(hdr, { childList: true, subtree: true });
+							}
+						}
+					});
 			});
 			function watchToolbarRoot() {
 				// Prefer the header itself: the chat list churns constantly and
@@ -3464,8 +3481,27 @@ func getInitScript(ua string) string {
 				showRecoveryPanel();
 			}
 			window.openRecoveryPanel = showRecoveryPanel;
+			// The last-resort launcher must never sit next to a working control:
+			// it is a lifeline for the case where the other entry points failed,
+			// not an extra gear. So it only mounts while no *visible* entry point
+			// exists, and unmounts again as soon as one appears.
+			function visibleEntryPointPresent() {
+				var ids = ['wa-toolbar-settings-btn', 'wa-settings-fallback-btn'];
+				for (var i = 0; i < ids.length; i++) {
+					var el = document.getElementById(ids[i]);
+					if (!el || el.style.display === 'none') continue;
+					var r = el.getBoundingClientRect();
+					if (r.width > 0 && r.height > 0) return true;
+				}
+				return false;
+			}
 			function mount() {
-				if (realEntryPointPresent()) return;
+				var existing = document.getElementById('wa-emergency-settings-btn');
+				if (visibleEntryPointPresent()) {
+					if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+					return;
+				}
+				if (existing) return;
 				if (!document.body) return;
 				var btn = document.createElement('button');
 				btn.id = 'wa-emergency-settings-btn';
@@ -3477,6 +3513,9 @@ func getInitScript(ua string) string {
 				btn.onclick = function(e) { e.preventDefault(); e.stopPropagation(); openSettings(); };
 				document.body.appendChild(btn);
 			}
+			// The rail fallback announces every mount/hide so this launcher can
+			// re-evaluate: it must disappear the moment a real control appears.
+			window.__waRecheckEmergencySettings = mount;
 			mount();
 			document.addEventListener('DOMContentLoaded', mount);
 			window.addEventListener('load', mount);
