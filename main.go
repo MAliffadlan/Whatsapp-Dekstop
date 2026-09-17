@@ -558,6 +558,7 @@ func getInitScript(ua string) string {
 			function isChatDrop(e) {
 				var target = e.target;
 				if (target && target.closest && target.closest('#wa-settings-modal, #wa-doc-modal-overlay, #wa-onboarding-overlay, [role="dialog"]')) {
+					if (e.stopImmediatePropagation) e.stopImmediatePropagation();
 					return false;
 				}
 				return true;
@@ -768,24 +769,24 @@ func getInitScript(ua string) string {
 
 				var isMedia = areAllMediaFiles(files);
 
-				if (isMedia) {
-					// MEDIA: intercept to prevent WhatsApp from treating images as stickers.
-					// We reroute the drop to the media file input directly.
-					e.preventDefault();
-					e.stopImmediatePropagation();
-					dropInProgress = true;
-					lastUploadAt = Date.now();
-					injectFiles(files, 0, true);
-					setTimeout(function() { dropInProgress = false; }, 2500);
-				} else {
-					// DOCUMENTS (PDF, Word, Excel, etc.):
-					// Let WhatsApp's own native drop handler process these —
-					// it will show the document send dialog correctly.
-					// We only call preventDefault to stop the browser from navigating to the file.
-					// We do NOT call stopImmediatePropagation, so WhatsApp's listeners still fire.
-					e.preventDefault();
-					lastUploadAt = Date.now(); // prevent download interceptor from triggering
-				}
+				// Prevent browser navigation (navigating to file:// URL)
+				e.preventDefault();
+				lastUploadAt = Date.now(); // prevent download interceptor from triggering
+
+				// Do NOT stopImmediatePropagation so WhatsApp's native drop handler
+				// on #main / conversation-panel receives the drop event for BOTH
+				// media (photos/videos) and documents (PDF, Office, etc.).
+				// Fallback: If WhatsApp's native modal has not opened after a delay,
+				// attempt programmatic injection.
+				setTimeout(function() {
+					var modalOpen = document.querySelector(
+						'[data-testid="media-editor"], [data-testid="image-editor"], ' +
+						'[data-testid="drawer-middle"], [role="dialog"], [data-animate-modal-popup="true"]'
+					);
+					if (!modalOpen) {
+						injectFiles(files, 0, isMedia);
+					}
+				}, 400);
 			}
 
 			document.addEventListener('dragenter', handleDragEnter, true);
