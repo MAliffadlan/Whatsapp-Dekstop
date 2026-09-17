@@ -25,6 +25,67 @@ func getInitScript(ua string) string {
 	}
 
 	script := `
+		// --- Safe storage -------------------------------------------------
+		// localStorage throws (SecurityError) instead of returning null when
+		// the engine denies storage: WebView2 does this in InPrivate mode and
+		// when the profile directory is read-only. Unguarded calls used to
+		// abort the whole injected script, which took the Settings control and
+		// every keyboard shortcut down with it. All reads/writes go through
+		// here so a denied store degrades to "preference not persisted".
+		var waMemoryStore = {};
+		function storageGet(key) {
+			try {
+				var v = localStorage.getItem(key);
+				if (v !== null) return v;
+			} catch (e) {
+				waNoteRecoverable('storage-get', e);
+			}
+			return Object.prototype.hasOwnProperty.call(waMemoryStore, key) ? waMemoryStore[key] : null;
+		}
+		function storageSet(key, value) {
+			waMemoryStore[key] = String(value);
+			try {
+				localStorage.setItem(key, String(value));
+			} catch (e) {
+				waNoteRecoverable('storage-set', e);
+			}
+		}
+		function storageRemove(key) {
+			delete waMemoryStore[key];
+			try {
+				localStorage.removeItem(key);
+			} catch (e) {
+				waNoteRecoverable('storage-remove', e);
+			}
+		}
+
+		// --- Recoverable-failure log --------------------------------------
+		// Non-fatal problems are recorded instead of thrown so one degraded
+		// feature never disables the rest of the injected script. Bounded, and
+		// surfaced by the in-app diagnostics panel.
+		var waRecoverable = [];
+		function waNoteRecoverable(where, err) {
+			try {
+				waRecoverable.push(where + ': ' + String((err && err.message) || err));
+				if (waRecoverable.length > 25) waRecoverable.shift();
+			} catch (e) {}
+		}
+		window.__waRecoverable = function() { return waRecoverable.slice(); };
+
+		// Runs a module so that a failure inside it cannot stop later modules.
+		// Each IIFE below is independent; without this an early throw (a WebView2
+		// API difference, a denied storage read) removes every enhancement
+		// defined after it.
+		function waRunModule(name, fn) {
+			try {
+				return fn();
+			} catch (e) {
+				waNoteRecoverable(name, e);
+				return undefined;
+			}
+		}
+
+	try {
 		// UserAgent and platform override to Google Chrome
 		Object.defineProperty(navigator, 'userAgent', {
 			get: () => '` + ua + `'
@@ -1485,7 +1546,7 @@ func getInitScript(ua string) string {
 			// when the window loses focus, and unblurs on the next interaction.
 			// Persisted in localStorage so it survives reloads.
 			var AUTO_LOCK_KEY = 'wa_desk_privacy_autolock';
-			var autoLockEnabled = localStorage.getItem(AUTO_LOCK_KEY) === '1';
+			var autoLockEnabled = storageGet(AUTO_LOCK_KEY) === '1';
 			var IDLE_MS = 60000;
 			var idleTimer = null;
 			var autoLocked = false;
@@ -1493,7 +1554,7 @@ func getInitScript(ua string) string {
 			function isAutoLockEnabled() { return autoLockEnabled; }
 			function setAutoLockEnabled(on) {
 				autoLockEnabled = !!on;
-				localStorage.setItem(AUTO_LOCK_KEY, on ? '1' : '0');
+				storageSet(AUTO_LOCK_KEY, on ? '1' : '0');
 				if (!on && autoLocked) { autoLocked = false; applyPrivacyMode(false, true); }
 				if (on) resetIdleTimer();
 				return autoLockEnabled;
@@ -2534,11 +2595,9 @@ func getInitScript(ua string) string {
 			}
 
 			function persistThemePreference(theme, isDark) {
-				try {
-					localStorage.setItem('system-theme-mode', theme === 'system' ? 'true' : 'false');
-					localStorage.setItem('theme', JSON.stringify(theme === 'system' ? (isDark ? 'dark' : 'light') : theme));
-					localStorage.setItem('wa-desk-theme', theme);
-				} catch(e) {}
+				storageSet('system-theme-mode', theme === 'system' ? 'true' : 'false');
+				storageSet('theme', JSON.stringify(theme === 'system' ? (isDark ? 'dark' : 'light') : theme));
+				storageSet('wa-desk-theme', theme);
 			}
 
 			function scheduleThemeReapply() {
@@ -3237,9 +3296,10 @@ func getInitScript(ua string) string {
 						checks.push(navigator.onLine === false ? 'Network: offline (chat may not refresh)' : 'Network: available');
 						try {
 							var key = 'wa-desk-diagnostic-probe';
-							localStorage.setItem(key, '1'); localStorage.removeItem(key);
+							localStorage.setItem(key, '1');
+							localStorage.removeItem(key);
 							checks.push('Local settings storage: ready');
-						} catch (e) { checks.push('Local settings storage: unavailable'); }
+						} catch (e) { checks.push('Local settings storage: unavailable (preferences will not persist)'); }
 						var healthy = !missing.length && navigator.onLine !== false;
 						diagnosticsResult.style.display = 'block';
 						diagnosticsResult.style.background = healthy ? 'rgba(0,168,132,.10)' : 'rgba(234,0,56,.10)';
@@ -3303,20 +3363,128 @@ func getInitScript(ua string) string {
 				}
 			};
 
-			// Keyboard Shortcut: Cmd/Ctrl + , (Settings) and Cmd/Ctrl + Shift + D (Open Download Folder)
+		})();
+
+		} catch (waInitError) {
+			// A module above failed (an engine API difference, denied
+			// storage, ...). Record it and keep going: everything below
+			// must still be installed.
+			waNoteRecoverable('init-body', waInitError);
+		}
+
+		// --- Core shortcuts (self-contained) ------------------------------
+		// Registered outside the modules above on purpose. The Settings button
+		// and Cmd/Ctrl+, used to disappear together on Windows because a single
+		// exception in an earlier module aborted the rest of the injected
+		// script. The controls the user needs to RECOVER from such a state must
+		// not depend on the modules that can break.
+		waRunModule('core-shortcuts', function() {
+			// Cmd/Ctrl+, opens Settings; Cmd/Ctrl+Shift+D opens the downloads
+			// folder. Both are also reachable from the Control Center itself.
+			function isSettingsChord(e) {
+				return (e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey &&
+					(e.key === ',' || e.key === '<' || e.code === 'Comma');
+			}
 			window.addEventListener('keydown', function(e) {
-				if ((e.metaKey || e.ctrlKey) && (e.key === ',' || e.key === '<')) {
+				if (isSettingsChord(e)) {
 					e.preventDefault();
-					window.showSettingsModal();
+					e.stopPropagation();
+					// Never let a broken Control Center swallow the chord: the
+					// shortcut is a recovery path, so it must not throw.
+					try {
+						if (typeof window.showSettingsModal === 'function') {
+							window.showSettingsModal();
+						} else if (typeof window.openRecoveryPanel === 'function') {
+							window.openRecoveryPanel();
+						}
+					} catch (err) {
+						waNoteRecoverable('shortcut-settings', err);
+						if (typeof window.openRecoveryPanel === 'function') {
+							window.openRecoveryPanel();
+						}
+					}
 				} else if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'd' || e.key === 'D')) {
 					e.preventDefault();
-					if (window.openDownloadDirNative) {
-						window.openDownloadDirNative();
-						showFloatingToast('📁 Opening downloads folder...');
+					e.stopPropagation();
+					try {
+						if (typeof window.openDownloadDirNative === 'function') {
+							window.openDownloadDirNative();
+							if (typeof window.showFloatingToast === 'function') {
+								window.showFloatingToast('📁 Opening downloads folder...');
+							}
+						}
+					} catch (err) {
+						waNoteRecoverable('shortcut-downloads', err);
 					}
 				}
 			}, true);
-		})();
+		});
+		// --- Emergency Settings entry point -------------------------------
+		// Guarantees a way into Settings even when the Control Center module
+		// above failed to install. Deliberately depends on nothing but the DOM:
+		// if the real button exists it defers to it, otherwise it mounts a
+		// minimal launcher, and if even the modal is missing the launcher opens
+		// a recovery panel with the recorded failures.
+		waRunModule('emergency-settings', function() {
+			function realEntryPointPresent() {
+				return !!document.getElementById('wa-toolbar-settings-btn') ||
+					!!document.getElementById('wa-settings-fallback-btn');
+			}
+			function showRecoveryPanel() {
+				var existing = document.getElementById('wa-recovery-overlay');
+				if (existing && existing.parentNode) { existing.parentNode.removeChild(existing); return; }
+				var fails = (typeof window.__waRecoverable === 'function') ? window.__waRecoverable() : [];
+				var overlay = document.createElement('div');
+				overlay.id = 'wa-recovery-overlay';
+				overlay.style.cssText = 'position:fixed;inset:0;background:rgba(8,15,19,.72);z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;';
+				var card = document.createElement('div');
+				card.style.cssText = 'width:440px;max-width:94vw;max-height:80vh;overflow:auto;background:#111b21;color:#e9edef;border:1px solid rgba(134,150,160,.35);border-radius:10px;padding:18px 20px;box-shadow:0 18px 48px rgba(0,0,0,.4);font-size:12.5px;line-height:1.6;';
+				var rows = fails.length
+					? fails.map(function(f) { return '<li>' + String(f).replace(/[<>&]/g, '') + '</li>'; }).join('')
+					: '<li>No failures recorded.</li>';
+				card.innerHTML =
+					'<strong style="font-size:14px;">WhatsApp Desk — recovery</strong>' +
+					'<p style="opacity:.8;margin:8px 0 10px;">The Settings panel did not load. Recorded problems:</p>' +
+					'<ul style="margin:0 0 14px;padding-left:18px;opacity:.9;">' + rows + '</ul>' +
+					'<button id="wa-recovery-reload" style="background:#00a884;color:#111b21;border:none;padding:8px 14px;border-radius:6px;font-weight:600;cursor:pointer;">Reload WhatsApp Web</button>';
+				overlay.appendChild(card);
+				document.body.appendChild(overlay);
+				var btn = document.getElementById('wa-recovery-reload');
+				if (btn) {
+					btn.onclick = function() {
+						if (typeof window.reloadWhatsApp === 'function') { window.reloadWhatsApp(); }
+						else { window.location.reload(); }
+					};
+				}
+			}
+			function openSettings() {
+				if (typeof window.showSettingsModal === 'function') {
+					try { window.showSettingsModal(); return; } catch (e) { waNoteRecoverable('showSettingsModal', e); }
+				}
+				showRecoveryPanel();
+			}
+			window.openRecoveryPanel = showRecoveryPanel;
+			function mount() {
+				if (realEntryPointPresent()) return;
+				if (!document.body) return;
+				var btn = document.createElement('button');
+				btn.id = 'wa-emergency-settings-btn';
+				btn.type = 'button';
+				btn.setAttribute('aria-label', 'Open Settings');
+				btn.title = 'Settings & Controls';
+				btn.textContent = '\u2699';
+				btn.style.cssText = 'position:fixed;left:14px;bottom:14px;z-index:2147483646;width:36px;height:36px;padding:0;display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(134,150,160,.45);border-radius:50%;background:#111b21;color:#aebac1;font-size:17px;line-height:1;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.3);';
+				btn.onclick = function(e) { e.preventDefault(); e.stopPropagation(); openSettings(); };
+				document.body.appendChild(btn);
+			}
+			mount();
+			document.addEventListener('DOMContentLoaded', mount);
+			window.addEventListener('load', mount);
+			// The Control Center mounts asynchronously after WhatsApp's own boot.
+			setTimeout(mount, 1200);
+			setTimeout(mount, 4000);
+		});
+
 	` + "\n" + getOnboardingScript()
 	// Single source of truth: every UI version string flows from appVersion
 	// (overridable at link time via -ldflags "-X main.appVersion=...").

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -465,6 +466,22 @@ func executeUpdate(ui UIController, downloadURL string) error {
 		})
 	})
 	if err != nil {
+		ui.Dispatch(func() {
+			ui.Eval(fmt.Sprintf("if (window.onUpdateError) { window.onUpdateError(%q); }", err.Error()))
+		})
+		return err
+	}
+
+	// Integrity gate: the downloaded artifact must match the SHA-256 published
+	// for this release before anything is executed or installed.
+	assetName := path.Base(downloadURL)
+	if i := strings.IndexAny(assetName, "?#"); i != -1 {
+		assetName = assetName[:i]
+	}
+	ui.Dispatch(func() {
+		ui.Eval("if (window.onUpdateStatus) { window.onUpdateStatus('Verifying download...'); }")
+	})
+	if err := verifyDownloadedChecksum(destFile, assetName, releaseBaseURLForAsset(downloadURL), checksumVerificationRequired); err != nil {
 		ui.Dispatch(func() {
 			ui.Eval(fmt.Sprintf("if (window.onUpdateError) { window.onUpdateError(%q); }", err.Error()))
 		})

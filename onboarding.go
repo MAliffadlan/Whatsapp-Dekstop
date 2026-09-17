@@ -10,7 +10,7 @@ func getOnboardingScript() string {
 			}
 
 			function showOnboarding(force) {
-				if (!force && localStorage.getItem(ONBOARDING_KEY) === 'true') return;
+				if (!force && storageGet(ONBOARDING_KEY) === 'true') return;
 				if (document.getElementById('wa-onboarding-overlay')) return;
 
 				if (!document.getElementById('wa-onboarding-style')) {
@@ -81,7 +81,7 @@ func getOnboardingScript() string {
 				panel.appendChild(footer);
 
 				function dismiss() {
-					localStorage.setItem(ONBOARDING_KEY, 'true');
+					storageSet(ONBOARDING_KEY, 'true');
 					overlay.style.opacity = '0';
 					setTimeout(function() {
 						if (overlay.parentNode) overlay.parentNode.removeChild(overlay);

@@ -130,7 +130,8 @@ if command -v rpmbuild >/dev/null 2>&1 && { [ "${WA_DESK_BUILD_RPM:-0}" = "1" ] 
     RPM_TOPDIR="${PWD}/rpmbuild"
 	SOURCE_ROOT="${PWD}"
     rm -rf "${RPM_TOPDIR}"
-    mkdir -p "${RPM_TOPDIR}/BUILDROOT" "${RPM_TOPDIR}/RPMS" "${RPM_TOPDIR}/SPECS"
+    mkdir -p "${RPM_TOPDIR}/BUILD" "${RPM_TOPDIR}/BUILDROOT" "${RPM_TOPDIR}/RPMS" \
+             "${RPM_TOPDIR}/SOURCES" "${RPM_TOPDIR}/SPECS" "${RPM_TOPDIR}/SRPMS"
     cat > "${RPM_TOPDIR}/SPECS/${APP_NAME}.spec" << EOF
 Name:           ${APP_NAME}
 Version:        ${VERSION}

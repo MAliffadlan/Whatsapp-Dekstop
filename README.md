@@ -31,6 +31,43 @@ Latest published release: **v1.5.9.2**
 
 Linux arm64 packages will be published starting with v1.5.9.1. The updater only offers an architecture-compatible package; it never substitutes an x64 build on arm64.
 
+### Verifying your download
+
+Every release publishes a `SHA256SUMS` file next to the binaries, and the
+in-app updater downloads and checks it before installing anything: if a
+downloaded update does not match the published digest, it is discarded and
+never executed.
+
+To verify a manual download:
+
+```bash
+# macOS
+shasum -a 256 -c SHA256SUMS
+
+# Linux
+sha256sum -c SHA256SUMS
+```
+
+```powershell
+# Windows PowerShell
+(Get-FileHash .\WhatsApp-Desk-Windows-x64-Setup.exe -Algorithm SHA256).Hash.ToLower()
+```
+
+Compare the printed digest against the matching line in
+[SHA256SUMS](https://github.com/vianziro/Whatsapp-Dekstop/releases/latest/download/SHA256SUMS).
+
+### Windows SmartScreen and antivirus
+
+The Windows builds are not code-signed (no Authenticode certificate), so
+Windows may show a SmartScreen warning on first run. Choose **More info** →
+**Run anyway**. If you prefer to check first, verify the SHA-256 above against
+the published `SHA256SUMS`.
+
+The release binaries are built without stripping debug information, which
+reduces — but cannot eliminate — heuristic false positives from antivirus
+engines. If a scanner flags the file, submit it to the vendor as a false
+positive and include the `SHA256SUMS` digest as evidence.
+
 ## Main features
 
 - Persistent WhatsApp Web session.
