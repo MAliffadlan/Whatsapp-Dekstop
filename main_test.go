@@ -655,8 +655,6 @@ func TestDragAndDropUploadStabilization(t *testing.T) {
 		"findInputInOrNear(el)",
 		"findMediaInput()",
 		"findDocumentInput()",
-		"mi-attach-document",
-		"mi-attach-media",
 		"injectFiles(files, attempt",
 		"document.addEventListener('dragenter'",
 		"document.addEventListener('dragleave'",
@@ -665,6 +663,8 @@ func TestDragAndDropUploadStabilization(t *testing.T) {
 		"DataTransfer()",
 		"fileInput.dispatchEvent(new Event('input'",
 		"fileInput.dispatchEvent(new Event('change'",
+		"stopImmediatePropagation",
+		"areAllMediaFiles(files)",
 	}
 
 	for _, want := range checks {

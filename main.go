@@ -668,59 +668,41 @@ func getInitScript(ua string) string {
 				return null;
 			}
 
+			// Find a hidden document file input that is pre-rendered in the DOM by WhatsApp Web.
+			// WhatsApp pre-renders hidden file inputs even before the attach menu is opened.
+			// The document input typically has accept="*" or no accept attribute.
 			function findDocumentInput() {
-				var selectors = [
-					'li[data-testid*="attach-doc"]',
-					'li[data-testid*="document"]',
-					'[data-testid*="attach-doc"]',
-					'[data-testid*="document"]',
-					'[data-testid="mi-attach-document"]',
-					'[data-testid="attach-document"]',
-					'[data-icon="attach-document"]',
-					'[data-icon="document"]',
-					'[aria-label*="Document" i]',
-					'[aria-label*="Dokumen" i]',
-					'[aria-label*="Documento" i]',
-					'[aria-label*="Dokument" i]',
-					'[aria-label*="Belge" i]',
-					'[title*="Document" i]',
-					'[title*="Dokumen" i]'
-				];
-				for (var s = 0; s < selectors.length; s++) {
-					var el = document.querySelector(selectors[s]);
-					if (el) {
-						var inp = findInputInOrNear(el);
-						if (inp) return inp;
-					}
-				}
-
 				var allInputs = document.querySelectorAll('input[type="file"]');
 				for (var i = 0; i < allInputs.length; i++) {
 					var input = allInputs[i];
-					if (input.closest && input.closest('[data-testid*="sticker"], [data-testid*="image"], [data-testid*="media"], [aria-label*="sticker" i], [aria-label*="stiker" i]')) {
+
+					// Skip sticker inputs
+					if (input.closest && input.closest('[data-testid*="sticker"], [aria-label*="sticker" i], [aria-label*="stiker" i]')) {
 						continue;
 					}
+
 					var accept = (input.getAttribute('accept') || '').toLowerCase().trim();
-					if (accept.indexOf('image/') !== -1 || accept.indexOf('video') !== -1) {
+
+					// Skip clearly media-only inputs (image/* or video/* without broad acceptance)
+					if (accept === 'image/*' || accept === 'video/*') continue;
+					if (accept.indexOf('image/*') !== -1 && accept.indexOf('video') !== -1 &&
+					    accept.indexOf('pdf') === -1 && accept.indexOf('application') === -1 && accept !== '*') {
 						continue;
 					}
-					if (accept === '*' || accept === '*/*' || accept.indexOf('document') !== -1 || accept.indexOf('application') !== -1) {
+					if (accept.indexOf('image/png,image/jpeg,image/webp') !== -1 && accept.indexOf('*') === -1) {
+						continue;
+					}
+
+					// Document inputs:
+					//  - accept="*" or accept="*/*" (accept all)
+					//  - accept="" or no accept attribute (no restriction)
+					//  - accept contains document/application types
+					if (accept === '*' || accept === '*/*' || accept === '' ||
+					    accept.indexOf('document') !== -1 || accept.indexOf('application') !== -1 ||
+					    accept.indexOf('pdf') !== -1) {
 						return input;
 					}
 				}
-
-				var menu = document.querySelector('[data-testid*="attach-menu"], ul[role="menu"], [data-animate-dropdown-item="true"]');
-				if (menu) {
-					var menuInputs = menu.querySelectorAll('input[type="file"]');
-					for (var j = 0; j < menuInputs.length; j++) {
-						var mInput = menuInputs[j];
-						var mAccept = (mInput.getAttribute('accept') || '').toLowerCase().trim();
-						if (mAccept.indexOf('image/') === -1 && mAccept.indexOf('video') === -1) {
-							return mInput;
-						}
-					}
-				}
-
 				return null;
 			}
 
@@ -746,6 +728,7 @@ func getInitScript(ua string) string {
 				}
 			}
 
+			// Only used for media injection (documents are handled natively by WhatsApp).
 			function injectFiles(files, attempt, isMedia) {
 				if (isMedia === undefined) isMedia = areAllMediaFiles(files);
 
@@ -755,10 +738,6 @@ func getInitScript(ua string) string {
 				}
 
 				if (attempt < 40) {
-					if (attempt === 6) {
-						var attachBtn = findAttachButton();
-						if (attachBtn) attachBtn.click();
-					}
 					setTimeout(function() { injectFiles(files, attempt + 1, isMedia); }, 40);
 				}
 				return false;
@@ -766,35 +745,34 @@ func getInitScript(ua string) string {
 
 			function handleDrop(e) {
 				if (!isFileDrag(e) || !isChatDrop(e) || dropInProgress) return;
-				e.preventDefault();
-				e.stopImmediatePropagation();
-				dragCounter = 0;
-				var dz = getDropZone();
-				if (dz) dz.classList.remove('wa-drag-over');
 
 				var files = Array.prototype.slice.call((e.dataTransfer && e.dataTransfer.files) || []);
 				if (!files || files.length === 0) return;
 
-				dropInProgress = true;
-				lastUploadAt = Date.now();
+				dragCounter = 0;
+				var dz = getDropZone();
+				if (dz) dz.classList.remove('wa-drag-over');
 
 				var isMedia = areAllMediaFiles(files);
 
-				// Only click attach button if attach menu isn't already open
-				var isMenuOpen = !!document.querySelector(
-					'[data-testid*="attach-doc"], [data-testid*="attach-media"], ' +
-					'[data-testid="mi-attach-document"], [data-testid="mi-attach-media"], ' +
-					'li[data-testid*="document"], li[data-testid*="image"]'
-				);
-				if (!isMenuOpen) {
-					var attachBtn = findAttachButton();
-					if (attachBtn) {
-						attachBtn.click();
-					}
+				if (isMedia) {
+					// MEDIA: intercept to prevent WhatsApp from treating images as stickers.
+					// We reroute the drop to the media file input directly.
+					e.preventDefault();
+					e.stopImmediatePropagation();
+					dropInProgress = true;
+					lastUploadAt = Date.now();
+					injectFiles(files, 0, true);
+					setTimeout(function() { dropInProgress = false; }, 2500);
+				} else {
+					// DOCUMENTS (PDF, Word, Excel, etc.):
+					// Let WhatsApp's own native drop handler process these —
+					// it will show the document send dialog correctly.
+					// We only call preventDefault to stop the browser from navigating to the file.
+					// We do NOT call stopImmediatePropagation, so WhatsApp's listeners still fire.
+					e.preventDefault();
+					lastUploadAt = Date.now(); // prevent download interceptor from triggering
 				}
-
-				injectFiles(files, 0, isMedia);
-				setTimeout(function() { dropInProgress = false; }, 2500);
 			}
 
 			document.addEventListener('dragenter', handleDragEnter, true);
