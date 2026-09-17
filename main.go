@@ -519,17 +519,41 @@ func getInitScript(ua string) string {
 			}
 		}, true);
 
-		// Drag & Drop file upload to chat
+		// Drag & Drop file upload to chat (stabilized for macOS and Windows)
+		var lastUploadAt = 0;
+		function isRecentUpload() {
+			return (Date.now() - lastUploadAt) < 6000;
+		}
+
 		(function() {
-			var dropZone = null;
 			var dragCounter = 0;
+			var dropInProgress = false;
 
 			function getDropZone() {
-				// WhatsApp Web's main chat area where files can be dropped
-				return document.querySelector('#main') || document.querySelector('[data-testid="conversation-panel"]') || document.body;
+				return document.querySelector('#main') || document.querySelector('[data-testid="conversation-panel"]') || document.querySelector('[data-testid="chat-list"]') || document.body;
+			}
+
+			function isFileDrag(e) {
+				var dt = e.dataTransfer;
+				if (!dt) return false;
+				if (dt.types) {
+					for (var i = 0; i < dt.types.length; i++) {
+						if (dt.types[i] === 'Files') return true;
+					}
+				}
+				return false;
+			}
+
+			function isChatDrop(e) {
+				var target = e.target;
+				if (target && target.closest && target.closest('#wa-settings-modal, #wa-doc-modal-overlay, #wa-onboarding-overlay, [role="dialog"]')) {
+					return false;
+				}
+				return true;
 			}
 
 			function handleDragEnter(e) {
+				if (!isFileDrag(e) || !isChatDrop(e)) return;
 				dragCounter++;
 				e.preventDefault();
 				e.stopPropagation();
@@ -547,68 +571,76 @@ func getInitScript(ua string) string {
 			}
 
 			function handleDragOver(e) {
+				if (!isFileDrag(e) || !isChatDrop(e)) return;
 				e.preventDefault();
 				e.stopPropagation();
 				e.dataTransfer.dropEffect = 'copy';
 			}
 
-			async function handleDrop(e) {
+			function findFileInput() {
+				return document.querySelector('input[type="file"][accept*="*"], input[type="file"][accept*="image"], input[type="file"][accept*="video"], input[type="file"][accept*="document"], input[type="file"]');
+			}
+
+			function findAttachButton() {
+				return document.querySelector('[data-testid="clip"], [data-icon="clip"], [aria-label*="Attach" i], [aria-label*="Lampirkan" i]');
+			}
+
+			function setFilesOnInput(fileInput, files) {
+				if (!fileInput || !files || files.length === 0) return false;
+				try {
+					var dt = new DataTransfer();
+					for (var i = 0; i < files.length; i++) dt.items.add(files[i]);
+					fileInput.files = dt.files;
+					if (!fileInput.files || fileInput.files.length !== files.length) return false;
+					fileInput.dispatchEvent(new Event('input', { bubbles: true }));
+					fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+					return true;
+				} catch (err) {
+					return false;
+				}
+			}
+
+			function injectFiles(files, attempt) {
+				var fileInput = findFileInput();
+				if (fileInput && setFilesOnInput(fileInput, files)) {
+					return true;
+				}
+				if (attempt < 30) {
+					setTimeout(function() { injectFiles(files, attempt + 1); }, 40);
+				}
+				return false;
+			}
+
+			function handleDrop(e) {
+				if (!isFileDrag(e) || !isChatDrop(e) || dropInProgress) return;
 				e.preventDefault();
-				e.stopPropagation();
+				e.stopImmediatePropagation();
 				dragCounter = 0;
 				var dz = getDropZone();
 				if (dz) dz.classList.remove('wa-drag-over');
 
-				var files = e.dataTransfer.files;
+				var files = Array.prototype.slice.call((e.dataTransfer && e.dataTransfer.files) || []);
 				if (!files || files.length === 0) return;
 
-				// Find the file input for the attach menu
-				var attachBtn = document.querySelector('[data-testid="clip"], [data-icon="clip"], [aria-label*="Attach"], [aria-label*="Lampirkan"]');
-				if (attachBtn) {
-					attachBtn.click();
-					// Wait for the file input to appear
-					setTimeout(function() {
-						var fileInput = document.querySelector('input[type="file"][accept*="*"], input[type="file"][accept*="image"], input[type="file"][accept*="video"], input[type="file"][accept*="document"], input[type="file"][accept*="audio"]');
-						if (fileInput && fileInput.files.length === 0) {
-							// Create a DataTransfer to set files on the input
-							var dt = new DataTransfer();
-							for (var i = 0; i < files.length; i++) {
-								dt.items.add(files[i]);
-							}
-							fileInput.files = dt.files;
-							// Trigger change event
-							var event = new Event('change', { bubbles: true });
-							fileInput.dispatchEvent(event);
-						}
-					}, 100);
+				dropInProgress = true;
+				lastUploadAt = Date.now();
+
+				var fileInput = findFileInput();
+				if (fileInput && setFilesOnInput(fileInput, files)) {
+					setTimeout(function() { dropInProgress = false; }, 1500);
+					return;
 				}
+
+				var attachBtn = findAttachButton();
+				if (attachBtn) attachBtn.click();
+				injectFiles(files, 0);
+				setTimeout(function() { dropInProgress = false; }, 1500);
 			}
 
-			function initDragDrop() {
-				var dz = getDropZone();
-				if (dz) {
-					dz.addEventListener('dragenter', handleDragEnter, true);
-					dz.addEventListener('dragleave', handleDragLeave, true);
-					dz.addEventListener('dragover', handleDragOver, true);
-					dz.addEventListener('drop', handleDrop, true);
-				}
-			}
-
-			// Initialize when DOM is ready
-			if (document.readyState === 'loading') {
-				document.addEventListener('DOMContentLoaded', initDragDrop);
-			} else {
-				initDragDrop();
-			}
-
-			// Re-initialize on navigation (WhatsApp Web is SPA)
-			var lastUrl = location.href;
-			setInterval(function() {
-				if (location.href !== lastUrl) {
-					lastUrl = location.href;
-					setTimeout(initDragDrop, 500);
-				}
-			}, 1000);
+			document.addEventListener('dragenter', handleDragEnter, true);
+			document.addEventListener('dragleave', handleDragLeave, true);
+			document.addEventListener('dragover', handleDragOver, true);
+			document.addEventListener('drop', handleDrop, true);
 		})();
 
 		// Helper: Decode base64 dataURI to Uint8Array
@@ -1100,7 +1132,7 @@ func getInitScript(ua string) string {
 					bType === 'text/csv' || bType === 'text/plain' ||
 					(blob && (blob.type === 'application/octet-stream' || bType === '') && isRecentPDFIntent());
 
-				if (blob && isDocBlob) {
+				if (blob && isDocBlob && !isRecentUpload()) {
 					var name = lastClickedDocName || 'document';
 					if (!name.includes('.')) {
 						if (bType.indexOf('pdf') >= 0) name += '.pdf';

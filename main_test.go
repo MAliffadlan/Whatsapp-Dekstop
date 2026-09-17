@@ -644,3 +644,28 @@ func TestMediaViewerCloseButtonNotIntercepted(t *testing.T) {
 		}
 	}
 }
+
+func TestDragAndDropUploadStabilization(t *testing.T) {
+	script := getInitScript("test-agent")
+
+	checks := []string{
+		"isRecentUpload()",
+		"setFilesOnInput(fileInput, files)",
+		"findAttachButton()",
+		"injectFiles(files, attempt)",
+		"document.addEventListener('dragenter'",
+		"document.addEventListener('dragleave'",
+		"document.addEventListener('dragover'",
+		"document.addEventListener('drop'",
+		"DataTransfer()",
+		"fileInput.dispatchEvent(new Event('input'",
+		"fileInput.dispatchEvent(new Event('change'",
+	}
+
+	for _, want := range checks {
+		if !strings.Contains(script, want) {
+			t.Errorf("script is missing drag-and-drop safeguard %q", want)
+		}
+	}
+}
+
