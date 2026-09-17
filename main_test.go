@@ -218,19 +218,24 @@ func TestSettingsAlwaysHasAnAccessibleEntryPoint(t *testing.T) {
 	}
 }
 
-func TestPrivacyModeUsesSolidRedactionWithoutFuzzyTextShadow(t *testing.T) {
+func TestPrivacyModeUsesVisualBlurWithChatListHoverUnblur(t *testing.T) {
 	script := getInitScript("test-agent")
 	for _, want := range []string{
-		"background: rgba(134,150,160,.42)",
-		"text-shadow: none !important",
-		"border-radius: 3px",
+		"filter: blur(6px) !important",
+		"filter: none !important",
+		"#pane-side [role=\"row\"]:hover",
+		"#pane-side [role=\"listitem\"]:hover",
+		"#pane-side [data-testid=\"cell-frame-container\"]:hover",
+		"#pane-side div[tabindex=\"-1\"]:hover",
+		"#pane-side span:hover",
+		"[data-testid=\"msg-container\"]:hover",
 	} {
 		if !strings.Contains(script, want) {
-			t.Errorf("privacy redaction is missing %q", want)
+			t.Errorf("privacy blur styling is missing %q", want)
 		}
 	}
-	if strings.Contains(script, "text-shadow: 0 0 10px") {
-		t.Fatal("privacy mode must not render fuzzy text shadows")
+	if strings.Contains(script, "background: rgba(134,150,160") {
+		t.Fatal("privacy mode must use visual blur, not gray solid redaction boxes")
 	}
 }
 

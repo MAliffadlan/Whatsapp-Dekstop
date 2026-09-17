@@ -1580,65 +1580,112 @@ func getInitScript(ua string) string {
 			var isPrivacyActive = false;
 			var styleEl = document.createElement('style');
 			styleEl.id = 'whatsapp-privacy-style';
-			// PRIVACY STRATEGY (perf-critical, see Fedora report): text is hidden
-			// with solid redaction blocks, NOT filter:blur(). Filters
-			// force a compositing layer per element (1.8 GB spikes on Wayland)
-			// and a blurred PARENT can never be un-blurred by a hovered child,
-			// which rules out container blur entirely. Solid redaction hides only
-			// the glyphs — layout, timestamps and the reply box stay
-			// intact — and :hover restores the inherited color with a single
-			// static switch (never transitioned/animated).
-			// Primary target is WhatsApp's long-stable span.selectable-text
-			// (message bodies, chat names, previews); structural fallbacks
-			// cover rows whose spans lack that class. Timestamps/meta spans
-			// don't carry selectable-text, so they stay readable by design.
+			// PRIVACY STRATEGY: text and previews use authentic visual blur
+			// (filter: blur(6px)), not opaque gray redaction blocks.
+			// Layout and timestamps (:not([data-wa-time])) remain preserved.
+			// Full set of chat list container selectors ensures instant auto-unblur
+			// on hover across all modern WhatsApp Web DOM structures.
 			styleEl.textContent = [
-				// Layer 1: names + previews in the chat list, hover row to peek.
+				// Layer 1: names + previews in the chat list, hover row/item to peek.
 				// Spans tagged data-wa-time by the timestamp tagger below are
 				// always spared, so clock times stay readable.
-				'.privacy-mode #pane-side [role="row"] span.selectable-text:not([data-wa-time]),',
-				'.privacy-mode [data-testid="chat-list"] [role="row"] span.selectable-text:not([data-wa-time]),',
-				'.privacy-mode #pane-side [role="row"] span[title]:not([data-wa-time]),',
-				'.privacy-mode [data-testid="chat-list"] [role="row"] span[title]:not([data-wa-time])',
-				'{ color: transparent !important; text-shadow: none !important; background: rgba(134,150,160,.42) !important; border-radius: 3px; }',
-				// Hovering a row restores every span beneath it, so restore can
-				// never disagree with blur even if WhatsApp rotates classes.
+				'.privacy-mode #pane-side [role="row"] span:not([data-wa-time]),',
+				'.privacy-mode #pane-side [role="listitem"] span:not([data-wa-time]),',
+				'.privacy-mode #pane-side [data-testid="cell-frame-container"] span:not([data-wa-time]),',
+				'.privacy-mode #pane-side div[tabindex="-1"] span:not([data-wa-time]),',
+				'.privacy-mode #pane-side ._ak8q,',
+				'.privacy-mode #pane-side ._ak8k,',
+				'.privacy-mode [data-testid="chat-list"] [role="row"] span:not([data-wa-time]),',
+				'.privacy-mode [data-testid="chat-list"] [role="listitem"] span:not([data-wa-time]),',
+				'.privacy-mode [data-testid="chat-list"] [data-testid="cell-frame-container"] span:not([data-wa-time]),',
+				'.privacy-mode [data-testid="chat-list"] div[tabindex="-1"] span:not([data-wa-time])',
+				'{ filter: blur(6px) !important; transition: filter 0.15s ease-out !important; }',
+				// Hovering any row or container restores its contents instantly.
 				'.privacy-mode #pane-side [role="row"]:hover span,',
-				'.privacy-mode [data-testid="chat-list"] [role="row"]:hover span',
-				'{ color: inherit !important; text-shadow: none !important; background: transparent !important; }',
-				// Layer 2: everything textual inside a message bubble, keyed ONLY
-				// on the long-stable [data-testid="msg-container"] hook — never
-				// on hashed cosmetic classes (those rotate; .message-in and
-				// span.selectable-text no longer exist, which is exactly why
-				// hover-to-peek silently died). Hovering the bubble restores
-				// the whole subtree, so blur and restore can never disagree.
-				// The reply box lives outside msg-container and stays usable.
-				'.privacy-mode #main [data-testid="msg-container"] span:not([data-wa-time])',
-				'{ color: transparent !important; text-shadow: none !important; background: rgba(134,150,160,.42) !important; border-radius: 3px; }',
-				'.privacy-mode #main [data-testid="msg-container"]:hover span',
-				'{ color: inherit !important; text-shadow: none !important; background: transparent !important; }',
-				// In-chat photos/videos hide the same way (filter is the only
-				// tool for replaced elements); hover restores symmetrically.
-				'.privacy-mode #main [data-testid="msg-container"] img,',
-				'.privacy-mode #main [data-testid="msg-container"] video',
-				'{ filter: blur(12px) !important; }',
-				'.privacy-mode #main [data-testid="msg-container"]:hover img,',
-				'.privacy-mode #main [data-testid="msg-container"]:hover video',
+				'.privacy-mode #pane-side [role="listitem"]:hover span,',
+				'.privacy-mode #pane-side [data-testid="cell-frame-container"]:hover span,',
+				'.privacy-mode #pane-side div[tabindex="-1"]:hover span,',
+				'.privacy-mode #pane-side div._ak8l:hover span,',
+				'.privacy-mode #pane-side [role="row"]:hover ._ak8q,',
+				'.privacy-mode #pane-side [role="listitem"]:hover ._ak8q,',
+				'.privacy-mode #pane-side [data-testid="cell-frame-container"]:hover ._ak8q,',
+				'.privacy-mode #pane-side div[tabindex="-1"]:hover ._ak8q,',
+				'.privacy-mode #pane-side [role="row"]:hover ._ak8k,',
+				'.privacy-mode #pane-side [role="listitem"]:hover ._ak8k,',
+				'.privacy-mode #pane-side [data-testid="cell-frame-container"]:hover ._ak8k,',
+				'.privacy-mode #pane-side div[tabindex="-1"]:hover ._ak8k,',
+				'.privacy-mode [data-testid="chat-list"] [role="row"]:hover span,',
+				'.privacy-mode [data-testid="chat-list"] [role="listitem"]:hover span,',
+				'.privacy-mode [data-testid="chat-list"] [data-testid="cell-frame-container"]:hover span,',
+				'.privacy-mode [data-testid="chat-list"] div[tabindex="-1"]:hover span,',
+				'.privacy-mode #pane-side span:hover,',
+				'.privacy-mode #pane-side ._ak8q:hover,',
+				'.privacy-mode #pane-side ._ak8k:hover',
 				'{ filter: none !important; }',
-				// Layer 3: optional avatar blur (.blur-avatars on <html>).
-				// Covers all chat-list avatars AND the active chat's header avatar
-				// without needing separate observers.
+				// Layer 2: everything textual inside a message bubble.
+				// Hovering the bubble restores the whole subtree.
+				'.privacy-mode #main [data-testid="msg-container"] span:not([data-wa-time]),',
+				'.privacy-mode #main .message-in span:not([data-wa-time]),',
+				'.privacy-mode #main .message-out span:not([data-wa-time])',
+				'{ filter: blur(6px) !important; transition: filter 0.15s ease-out !important; }',
+				'.privacy-mode #main [data-testid="msg-container"]:hover span,',
+				'.privacy-mode #main .message-in:hover span,',
+				'.privacy-mode #main .message-out:hover span,',
+				'.privacy-mode #main [data-testid="msg-container"] span:hover,',
+				'.privacy-mode #main .message-in span:hover,',
+				'.privacy-mode #main .message-out span:hover',
+				'{ filter: none !important; }',
+				// In-chat photos/videos hide with blur; hover restores symmetrically.
+				'.privacy-mode #main [data-testid="msg-container"] img:not([data-emoji]),',
+				'.privacy-mode #main [data-testid="msg-container"] video,',
+				'.privacy-mode #main .message-in img:not([data-emoji]),',
+				'.privacy-mode #main .message-in video,',
+				'.privacy-mode #main .message-out img:not([data-emoji]),',
+				'.privacy-mode #main .message-out video',
+				'{ filter: blur(12px) !important; transition: filter 0.15s ease-out !important; }',
+				'.privacy-mode #main [data-testid="msg-container"]:hover img,',
+				'.privacy-mode #main [data-testid="msg-container"]:hover video,',
+				'.privacy-mode #main .message-in:hover img,',
+				'.privacy-mode #main .message-in:hover video,',
+				'.privacy-mode #main .message-out:hover img,',
+				'.privacy-mode #main .message-out:hover video,',
+				'.privacy-mode #main [data-testid="msg-container"] img:hover,',
+				'.privacy-mode #main [data-testid="msg-container"] video:hover',
+				'{ filter: none !important; }',
+				// Layer 3: conversation header name/status, hover to reveal.
+				'.privacy-mode #main header span:not([data-wa-time])',
+				'{ filter: blur(6px) !important; transition: filter 0.15s ease-out !important; }',
+				'.privacy-mode #main header:hover span,',
+				'.privacy-mode #main header span:hover',
+				'{ filter: none !important; }',
+				// Layer 4: optional avatar blur (.blur-avatars on <html>).
 				'.privacy-mode.blur-avatars #pane-side img,',
 				'.privacy-mode.blur-avatars [data-testid="chat-list"] img,',
 				'.privacy-mode.blur-avatars #main header img,',
 				'.privacy-mode.blur-avatars #main .message-in img,',
 				'.privacy-mode.blur-avatars #main .message-out img',
-				'{ filter: blur(12px) !important; }',
+				'{ filter: blur(12px) !important; transition: filter 0.15s ease-out !important; }',
 				'.privacy-mode.blur-avatars #pane-side [role="row"]:hover img,',
+				'.privacy-mode.blur-avatars #pane-side [role="listitem"]:hover img,',
+				'.privacy-mode.blur-avatars #pane-side [data-testid="cell-frame-container"]:hover img,',
+				'.privacy-mode.blur-avatars #pane-side div[tabindex="-1"]:hover img,',
+				'.privacy-mode.blur-avatars #pane-side div._ak8l:hover img,',
+				'.privacy-mode.blur-avatars #pane-side img:hover,',
 				'.privacy-mode.blur-avatars [data-testid="chat-list"] [role="row"]:hover img,',
+				'.privacy-mode.blur-avatars [data-testid="chat-list"] [role="listitem"]:hover img,',
+				'.privacy-mode.blur-avatars [data-testid="chat-list"] [data-testid="cell-frame-container"]:hover img,',
+				'.privacy-mode.blur-avatars [data-testid="chat-list"] div[tabindex="-1"]:hover img,',
+				'.privacy-mode.blur-avatars #main header:hover img,',
 				'.privacy-mode.blur-avatars #main header img:hover,',
 				'.privacy-mode.blur-avatars #main .message-in:hover img,',
 				'.privacy-mode.blur-avatars #main .message-out:hover img',
+				'{ filter: none !important; }',
+				// Layer 5: fullscreen media viewer
+				'.privacy-mode [data-testid="media-viewer"] img,',
+				'.privacy-mode [data-testid="media-viewer"] video',
+				'{ filter: blur(16px) !important; transition: filter 0.15s ease-out !important; }',
+				'.privacy-mode [data-testid="media-viewer"]:hover img,',
+				'.privacy-mode [data-testid="media-viewer"]:hover video',
 				'{ filter: none !important; }',
 				// Drag & drop visual feedback
 				'.wa-drag-over { outline: 3px solid #00a884; outline-offset: -3px; }',
