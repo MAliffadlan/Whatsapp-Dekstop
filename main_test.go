@@ -246,6 +246,12 @@ func TestPrivacyModeUsesVisualBlurWithChatListHoverUnblur(t *testing.T) {
 	if strings.Contains(script, "#pane-side [role=\"row\"]:hover span") {
 		t.Fatal("chat-list privacy reveal must not depend on broad row hover selectors")
 	}
+	if !strings.Contains(script, "#pane-side [role=\"row\"] span,") {
+		t.Fatal("chat-list timestamps must be included in the privacy blur layer")
+	}
+	if !strings.Contains(script, "row.querySelectorAll('span, ._ak8q") {
+		t.Fatal("hover reveal must include timestamp spans")
+	}
 }
 
 func TestThemeReapplyIsBoundedAndAvoidsObserverFeedbackLoop(t *testing.T) {

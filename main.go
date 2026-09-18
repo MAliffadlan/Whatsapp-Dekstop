@@ -1588,31 +1588,29 @@ func getInitScript(ua string) string {
 			styleEl.id = 'whatsapp-privacy-style';
 			// PRIVACY STRATEGY: text and previews use authentic visual blur
 			// (filter: blur(6px)), not opaque gray redaction blocks.
-			// Layout and timestamps (:not([data-wa-time])) remain preserved.
+			// Chat-list timestamps are private too and reveal with their row.
 			// Full set of chat list container selectors ensures instant auto-unblur
 			// on hover across all modern WhatsApp Web DOM structures.
 			styleEl.textContent = [
 				// Layer 1: names + previews in the chat list, hover row/item to peek.
-				// Spans tagged data-wa-time by the timestamp tagger below are
-				// always spared, so clock times stay readable.
-				'.privacy-mode #pane-side [role="row"] span:not([data-wa-time]),',
-				'.privacy-mode #pane-side [role="listitem"] span:not([data-wa-time]),',
-				'.privacy-mode #pane-side [data-testid="cell-frame-container"] span:not([data-wa-time]),',
-				'.privacy-mode #pane-side div[tabindex="-1"] span:not([data-wa-time]),',
+				'.privacy-mode #pane-side [role="row"] span,',
+				'.privacy-mode #pane-side [role="listitem"] span,',
+				'.privacy-mode #pane-side [data-testid="cell-frame-container"] span,',
+				'.privacy-mode #pane-side div[tabindex="-1"] span,',
 				'.privacy-mode #pane-side ._ak8q,',
 				'.privacy-mode #pane-side ._ak8k,',
-				'.privacy-mode [data-testid="chat-list"] [role="row"] span:not([data-wa-time]),',
-				'.privacy-mode [data-testid="chat-list"] [role="listitem"] span:not([data-wa-time]),',
-				'.privacy-mode [data-testid="chat-list"] [data-testid="cell-frame-container"] span:not([data-wa-time]),',
-				'.privacy-mode [data-testid="chat-list"] div[tabindex="-1"] span:not([data-wa-time])',
+				'.privacy-mode [data-testid="chat-list"] [role="row"] span,',
+				'.privacy-mode [data-testid="chat-list"] [role="listitem"] span,',
+				'.privacy-mode [data-testid="chat-list"] [data-testid="cell-frame-container"] span,',
+				'.privacy-mode [data-testid="chat-list"] div[tabindex="-1"] span',
 				'{ filter: blur(6px) !important; transition: filter 0.15s ease-out !important; }',
 				// Reveal is driven by an explicitly marked row. Relying on broad
 				// :hover selectors is unsafe because WhatsApp nests list containers
 				// and may make an ancestor appear hovered for every chat.
-				'.privacy-mode #pane-side [data-wa-privacy-hover="1"] span:not([data-wa-time]),',
+				'.privacy-mode #pane-side [data-wa-privacy-hover="1"] span,',
 				'.privacy-mode #pane-side [data-wa-privacy-hover="1"] ._ak8q,',
 				'.privacy-mode #pane-side [data-wa-privacy-hover="1"] ._ak8k,',
-				'.privacy-mode [data-testid="chat-list"] [data-wa-privacy-hover="1"] span:not([data-wa-time]),',
+				'.privacy-mode [data-testid="chat-list"] [data-wa-privacy-hover="1"] span,',
 				'.privacy-mode [data-wa-privacy-reveal="1"]',
 				'{ filter: none !important; }',
 				// Layer 2: everything textual inside a message bubble.
@@ -1721,7 +1719,7 @@ func getInitScript(ua string) string {
 				clearPrivacyHoverRow();
 				activePrivacyHoverRow = row;
 				row.setAttribute('data-wa-privacy-hover', '1');
-				var revealTargets = row.querySelectorAll('span:not([data-wa-time]), ._ak8q, ._ak8k, img, image, [data-testid="default-user"], [data-icon="default-user"], [data-icon="default-group"]');
+				var revealTargets = row.querySelectorAll('span, ._ak8q, ._ak8k, img, image, [data-testid="default-user"], [data-icon="default-user"], [data-icon="default-group"]');
 				for (var i = 0; i < revealTargets.length; i++) {
 					revealTargets[i].setAttribute('data-wa-privacy-reveal', '1');
 					revealTargets[i].style.setProperty('filter', 'none', 'important');
