@@ -71,6 +71,13 @@ func TestDownloadInterceptorCoalescesDuplicateRequests(t *testing.T) {
 	}
 }
 
+func TestExplicitDocumentDownloadsDoNotAutoOpenPreview(t *testing.T) {
+	script := getInitScript("test-agent")
+	if strings.Count(script, "captureDownload(href, name, false)") < 2 {
+		t.Fatal("explicit document download paths must disable auto-preview")
+	}
+}
+
 func TestOfficeDocumentPreviewSupport(t *testing.T) {
 	script := getInitScript("test-agent")
 
@@ -749,4 +756,3 @@ func TestWindowStateMaximizedSerialization(t *testing.T) {
 		t.Errorf("expected parsed.Maximized to be true")
 	}
 }
-

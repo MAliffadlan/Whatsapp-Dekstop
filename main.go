@@ -2583,7 +2583,9 @@ func getInitScript(ua string) string {
 				var href = this.href || this.getAttribute('href');
 				if ((downloadAttr !== null || this.download) && href && (href.indexOf('blob:') === 0 || href.indexOf('data:') === 0)) {
 					var name = downloadAttr || this.download || lastClickedDocName || 'whatsapp_media';
-					captureDownload(href, name, isDocumentFileName(name));
+					// An explicit download anchor means save only. Opening a document
+					// preview is reserved for clicking the document itself.
+					captureDownload(href, name, false);
 					return;
 				}
 				return originalAnchorClick.apply(this, arguments);
@@ -2600,7 +2602,8 @@ func getInitScript(ua string) string {
 							e.preventDefault();
 							e.stopPropagation();
 							var name = downloadAttr || target.download || lastClickedDocName || 'whatsapp_media';
-							captureDownload(href, name, isDocumentFileName(name));
+							// The user clicked Download directly: do not open a second preview.
+							captureDownload(href, name, false);
 							return;
 						}
 					}
