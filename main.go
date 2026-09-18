@@ -3867,6 +3867,46 @@ func getInitScript(ua string) string {
 			waNoteRecoverable('init-body', waInitError);
 		}
 
+		// Escape must close the active WhatsApp chat without invoking macOS's
+		// default fullscreen exit behavior. When no chat is active, keep the
+		// window fullscreen as well while allowing WhatsApp to handle its own UI.
+		// Native/app-owned overlays keep their existing Escape handlers and are
+		// deliberately excluded here.
+		waRunModule('escape-chat', function() {
+			if (__WA_GOOS !== 'darwin') return;
+			function nativeOverlayOpen() {
+				return !!document.querySelector('#wa-settings-overlay, #wa-doc-modal-overlay, #wa-onboarding-overlay, #wa-recovery-overlay, [data-testid="media-viewer"]');
+			}
+			function activeChatHeader() {
+				var main = document.getElementById('main');
+				return main && main.querySelector('header');
+			}
+			function closeChatFromEscape() {
+				if (nativeOverlayOpen()) return false;
+				var header = activeChatHeader();
+				if (!header) return false;
+				var back = header.querySelector([
+					'button[data-testid="back"]', '[data-testid="back"]',
+					'[data-icon="back"]', 'button[aria-label*="Back" i]',
+					'[role="button"][aria-label*="Back" i]',
+					'button[aria-label*="Kembali" i]',
+					'[role="button"][aria-label*="Kembali" i]',
+					'button[title*="Back" i]'
+				].join(','));
+				if (back) {
+					var control = back.closest && back.closest('button, [role="button"]');
+					(control || back).click();
+					return true;
+				}
+				return false;
+			}
+			window.addEventListener('keydown', function(e) {
+				if (e.key !== 'Escape' || !e.isTrusted || nativeOverlayOpen()) return;
+				e.preventDefault();
+				if (closeChatFromEscape()) e.stopImmediatePropagation();
+			}, true);
+		});
+
 		// --- Core shortcuts (self-contained) ------------------------------
 		// Registered outside the modules above on purpose. The Settings button
 		// and Cmd/Ctrl+, used to disappear together on Windows because a single
