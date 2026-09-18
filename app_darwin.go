@@ -900,6 +900,7 @@ import "C"
 import (
 	"encoding/json"
 	"fmt"
+	"html"
 	"log"
 	"os"
 	"os/exec"
@@ -1035,8 +1036,10 @@ func isAutoStartMac() bool {
 	if plistPath == "" {
 		return false
 	}
-	_, err := os.Stat(plistPath)
-	return err == nil
+	if _, err := os.Stat(plistPath); err != nil {
+		return false
+	}
+	return exec.Command("/bin/launchctl", "print", launchAgentDomain()+"/com.whatsapp.desk").Run() == nil
 }
 
 func toggleAutoStartMac() bool {
@@ -1045,11 +1048,18 @@ func toggleAutoStartMac() bool {
 		return false
 	}
 	if isAutoStartMac() {
+		_ = unloadLaunchAgent(plistPath)
 		_ = os.Remove(plistPath)
 		return false
 	}
+	// Remove a stale plist before writing and bootstrapping the replacement.
+	_ = os.Remove(plistPath)
 
 	appPath := getAppBundlePath()
+	programArguments := fmt.Sprintf("        <string>%s</string>\n", xmlEscape(appPath))
+	if strings.HasSuffix(strings.ToLower(appPath), ".app") {
+		programArguments = fmt.Sprintf("        <string>/usr/bin/open</string>\n        <string>-a</string>\n        <string>%s</string>\n", xmlEscape(appPath))
+	}
 	plistContent := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -1058,19 +1068,38 @@ func toggleAutoStartMac() bool {
     <string>com.whatsapp.desk</string>
     <key>ProgramArguments</key>
     <array>
-        <string>/usr/bin/open</string>
-        <string>%s</string>
+%s
     </array>
     <key>RunAtLoad</key>
     <true/>
 </dict>
-</plist>`, appPath)
+</plist>`, programArguments)
 
 	_ = os.MkdirAll(filepath.Dir(plistPath), 0755)
 	if err := os.WriteFile(plistPath, []byte(plistContent), 0644); err != nil {
 		return false
 	}
+	if err := loadLaunchAgent(plistPath); err != nil {
+		_ = os.Remove(plistPath)
+		return false
+	}
 	return true
+}
+
+func xmlEscape(value string) string {
+	return html.EscapeString(value)
+}
+
+func launchAgentDomain() string {
+	return fmt.Sprintf("gui/%d", os.Getuid())
+}
+
+func loadLaunchAgent(plistPath string) error {
+	return exec.Command("/bin/launchctl", "bootstrap", launchAgentDomain(), plistPath).Run()
+}
+
+func unloadLaunchAgent(plistPath string) error {
+	return exec.Command("/bin/launchctl", "bootout", launchAgentDomain(), plistPath).Run()
 }
 
 func showNativeNotification(title, message string) {
