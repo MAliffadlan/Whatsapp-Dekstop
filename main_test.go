@@ -254,6 +254,16 @@ func TestPrivacyModeUsesVisualBlurWithChatListHoverUnblur(t *testing.T) {
 	}
 }
 
+func TestPrivacyModeCopyMatchesTimestampBlurBehavior(t *testing.T) {
+	script := getInitScript("test-agent")
+	if !strings.Contains(script, "Hide names, previews, timestamps & message text") {
+		t.Fatal("privacy mode copy must explain that timestamps are hidden")
+	}
+	if strings.Contains(script, "timestamps stay visible") {
+		t.Fatal("privacy mode copy must not claim timestamps stay visible")
+	}
+}
+
 func TestThemeReapplyIsBoundedAndAvoidsObserverFeedbackLoop(t *testing.T) {
 	script := getInitScript("test-agent")
 	for _, want := range []string{

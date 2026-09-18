@@ -3268,7 +3268,7 @@ func getInitScript(ua string) string {
 					'      <strong class="wa-text-primary" style="font-size:12.5px;">Privacy Mode</strong>' +
 					'      <span id="wa-badge-priv" style="font-size:10px;padding:1px 5px;border-radius:4px;font-weight:600;">...</span>' +
 					'    </div>' +
-					'    <div class="wa-text-muted" style="font-size:11px;">Hide names, previews & message text until you turn this off. Hover to peek; timestamps stay visible; reply box stays usable.</div>' +
+					'    <div class="wa-text-muted" style="font-size:11px;">Hide names, previews, timestamps & message text until you turn this off. Hover a chat to reveal its details; reply box stays usable.</div>' +
 					'  </div>' +
 					'  <div style="display:flex;align-items:center;justify-content:space-between;">' +
 					'    <span class="wa-text-muted" style="font-size:10px;font-family:monospace;">' + (isMac ? 'Cmd' : 'Ctrl') + '+Shift+P</span>' +
