@@ -2898,7 +2898,13 @@ func getInitScript(ua string) string {
 				if (name) savedCache[name] = true;
 			};
 
-			function decorateItem(el, name) {
+			function findFileNameElement(el) {
+				if (!el) return null;
+				if (el.getAttribute && el.getAttribute('title')) return el;
+				return el.querySelector && el.querySelector('span[title], div[title]');
+			}
+
+			function decorateItem(el, name, filenameEl) {
 				if (el.__waSavedBadge) return;
 				fileExistsOnDisk(name).then(function(exists) {
 					if (!exists) return;
@@ -2908,19 +2914,17 @@ func getInitScript(ua string) string {
 					badge.setAttribute('aria-label', 'Already saved to downloads folder');
 					badge.style.cssText = badgeStyle;
 					badge.textContent = '✓ Saved';
-					// Prefer overlaying media thumbnails; append for text rows.
-					var host = el.querySelector('[data-testid="cell-frame-container"], .copyable-text') || el;
+					// Attach the badge to the filename element so it follows the
+					// incoming/outgoing bubble instead of landing at the row's left edge.
+					var host = filenameEl || el.querySelector('[data-testid="cell-frame-container"], .copyable-text') || el;
 					host.style.position = host.style.position || 'relative';
 					host.appendChild(badge);
 				});
 			}
 
 			function itemFileName(el) {
-				var t = el.getAttribute && (el.getAttribute('title') || '');
-				if (!t) {
-					var titleEl = el.querySelector && el.querySelector('span[title], div[title]');
-					t = titleEl ? (titleEl.getAttribute('title') || '') : '';
-				}
+				var titleEl = findFileNameElement(el);
+				var t = titleEl ? (titleEl.getAttribute('title') || '') : '';
 				if (!t) return '';
 				var m = t.match(/([^\n\r<>]{1,180}\.(pdf|docx?|xlsx?|pptx?|txt|csv|rtf|zip|mp4|mkv|mov|mp3|wav|jpe?g|png|webp|heic))\b/i);
 				return m ? m[1].trim() : '';
@@ -2939,7 +2943,7 @@ func getInitScript(ua string) string {
 					var row = rows[i];
 					if (row.__waSavedBadge) continue;
 					var name = itemFileName(row);
-					if (name) decorateItem(row, name);
+					if (name) decorateItem(row, name, findFileNameElement(row));
 				}
 			}
 
