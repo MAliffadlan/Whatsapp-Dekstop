@@ -1623,10 +1623,7 @@ func getInitScript(ua string) string {
 				'.privacy-mode [data-testid="chat-list"] [role="row"]:hover span,',
 				'.privacy-mode [data-testid="chat-list"] [role="listitem"]:hover span,',
 				'.privacy-mode [data-testid="chat-list"] [data-testid="cell-frame-container"]:hover span,',
-				'.privacy-mode [data-testid="chat-list"] div[tabindex="-1"]:hover span,',
-				'.privacy-mode #pane-side span:hover,',
-				'.privacy-mode #pane-side ._ak8q:hover,',
-				'.privacy-mode #pane-side ._ak8k:hover',
+				'.privacy-mode [data-testid="chat-list"] div[tabindex="-1"]:hover span',
 				'{ filter: none !important; }',
 				// Layer 2: everything textual inside a message bubble.
 				// Hovering the bubble restores the whole subtree.
@@ -1675,8 +1672,6 @@ func getInitScript(ua string) string {
 				'.privacy-mode.blur-avatars #pane-side [role="listitem"]:hover img,',
 				'.privacy-mode.blur-avatars #pane-side [data-testid="cell-frame-container"]:hover img,',
 				'.privacy-mode.blur-avatars #pane-side div[tabindex="-1"]:hover img,',
-				'.privacy-mode.blur-avatars #pane-side div._ak8l:hover img,',
-				'.privacy-mode.blur-avatars #pane-side img:hover,',
 				'.privacy-mode.blur-avatars [data-testid="chat-list"] [role="row"]:hover img,',
 				'.privacy-mode.blur-avatars [data-testid="chat-list"] [role="listitem"]:hover img,',
 				'.privacy-mode.blur-avatars [data-testid="chat-list"] [data-testid="cell-frame-container"]:hover img,',

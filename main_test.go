@@ -228,7 +228,6 @@ func TestPrivacyModeUsesVisualBlurWithChatListHoverUnblur(t *testing.T) {
 		"#pane-side [role=\"listitem\"]:hover",
 		"#pane-side [data-testid=\"cell-frame-container\"]:hover",
 		"#pane-side div[tabindex=\"-1\"]:hover",
-		"#pane-side span:hover",
 		"[data-testid=\"msg-container\"]:hover",
 	} {
 		if !strings.Contains(script, want) {
@@ -237,6 +236,9 @@ func TestPrivacyModeUsesVisualBlurWithChatListHoverUnblur(t *testing.T) {
 	}
 	if strings.Contains(script, "background: rgba(134,150,160") {
 		t.Fatal("privacy mode must use visual blur, not gray solid redaction boxes")
+	}
+	if strings.Contains(script, "#pane-side span:hover") {
+		t.Fatal("chat-list privacy reveal must remain scoped to the hovered chat container")
 	}
 }
 
@@ -749,4 +751,3 @@ func TestWindowStateMaximizedSerialization(t *testing.T) {
 		t.Errorf("expected parsed.Maximized to be true")
 	}
 }
-
