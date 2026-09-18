@@ -229,6 +229,7 @@ func TestPrivacyModeUsesVisualBlurWithChatListHoverUnblur(t *testing.T) {
 		"data-wa-privacy-reveal",
 		"function privacyChatRowFromTarget(target)",
 		"function markPrivacyHoverRow(row)",
+		"div._ak8l",
 	} {
 		if !strings.Contains(script, want) {
 			t.Errorf("privacy blur styling is missing %q", want)

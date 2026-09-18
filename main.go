@@ -1695,7 +1695,8 @@ func getInitScript(ua string) string {
 					if (node.matches && (node.matches('[role="row"]') ||
 						node.matches('[role="listitem"]') ||
 						node.matches('[data-testid="cell-frame-container"]') ||
-						node.matches('div[tabindex="-1"]'))) {
+						node.matches('div[tabindex="-1"]') ||
+						node.matches('div._ak8l'))) {
 						return node;
 					}
 					node = node.parentElement;
