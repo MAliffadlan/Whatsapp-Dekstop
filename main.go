@@ -2605,30 +2605,15 @@ func getInitScript(ua string) string {
 					return;
 				}
 				activeDownloadKeys[requestKey] = { status: 'downloading' };
-				showFloatingToast(isDoc ? ('📄 Opening preview: ' + filename + '...') : ('⏳ Downloading: ' + filename + '...'));
 
+				showFloatingToast(isDoc ? ('📄 Opening preview: ' + filename + '...') : ('⏳ Downloading: ' + filename + '...'));
 				fetch(href)
 					.then(function(response) {
+						if (!response) return null;
 						return response.blob();
 					})
 					.then(function(blob) {
-						// Content-level dedup: identical file via a different blob
-						// URL (second click, viewer button) was previously saved
-						// again as "name (1).ext". The Go saver also refuses
-						// byte-identical duplicates as a final backstop.
-						if (blob.size && activeDownloadSizes[blob.size]) {
-							var savedPath = activeDownloadSizes[blob.size];
-							if (window.__waMarkSaved) window.__waMarkSaved(filename);
-							showFloatingToast(shouldAutoOpen ? ('📄 Already saved: ' + filename) : ('💾 File already saved: ' + filename), openFolderAction());
-							if (shouldAutoOpen) {
-								var isPdfDup = filename.toLowerCase().endsWith('.pdf');
-								var dupBlobUrl = isPdfDup ? origCreateObjectURL(blob.slice(0, blob.size, 'application/pdf')) : '';
-								showInAppDocModal(filename, dupBlobUrl || href, savedPath, '', dupBlobUrl);
-								if (window.dismissStuckViewer) window.dismissStuckViewer();
-							}
-							releaseDownloadRequest(requestKey);
-							return;
-						}
+						if (!blob) return;
 						var isPdf = filename.toLowerCase().endsWith('.pdf');
 						var previewBlob = isPdf ? blob.slice(0, blob.size, 'application/pdf') : blob;
 						var ownedBlobUrl = isPdf ? origCreateObjectURL(previewBlob) : '';
@@ -3785,7 +3770,7 @@ func getInitScript(ua string) string {
 				if (diagnosticsBtn && diagnosticsResult) {
 					diagnosticsBtn.onclick = function() {
 						var checks = [];
-						var requiredBindings = ['getDownloadDirNative', 'openDownloadDirNative', 'checkForUpdateNative', 'checkFileExistsNative'];
+					var requiredBindings = ['getDownloadDirNative', 'openDownloadDirNative', 'checkForUpdateNative', 'checkFileExistsNative'];
 						var missing = requiredBindings.filter(function(name) { return typeof window[name] !== 'function'; });
 						checks.push(missing.length ? 'Native bridge: unavailable (' + missing.join(', ') + ')' : 'Native bridge: ready');
 						checks.push(navigator.onLine === false ? 'Network: offline (chat may not refresh)' : 'Network: available');

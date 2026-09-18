@@ -60,7 +60,6 @@ func TestDownloadInterceptorCoalescesDuplicateRequests(t *testing.T) {
 		"var activeDownloadKeys = Object.create(null)",
 		"function downloadRequestKey(href, filename)",
 		"var activeDownloadSizes = {}",
-		"if (blob.size && activeDownloadSizes[blob.size])",
 		"activeDownloadKeys[requestKey] = { status: 'downloading' }",
 		"markDownloadComplete(requestKey, savedPath, blob.size)",
 		"releaseDownloadRequest(requestKey)",
@@ -68,6 +67,20 @@ func TestDownloadInterceptorCoalescesDuplicateRequests(t *testing.T) {
 		if !strings.Contains(script, want) {
 			t.Errorf("download de-duplication is missing %q", want)
 		}
+	}
+}
+
+func TestExistingDownloadsAreDeduplicatedByContent(t *testing.T) {
+	script := getInitScript("test-agent")
+	for _, want := range []string{
+		"window.saveDownloadedFileNative(filename, base64data)",
+	} {
+		if !strings.Contains(script, want) {
+			t.Errorf("content-based download reuse is missing %q", want)
+		}
+	}
+	if strings.Contains(script, "window.findDownloadedFileNative(filename)") {
+		t.Fatal("downloads must not be reused by filename before their content is verified")
 	}
 }
 

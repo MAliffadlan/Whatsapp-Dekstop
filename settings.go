@@ -171,36 +171,44 @@ func setBlurAvatars(on bool) bool {
 	return s.BlurAvatars
 }
 
-// fileExistsInDownloadDir reports whether filename exists anywhere the saver
-// could have placed it: directly in the downloads folder, or inside any
-// YYYY-MM subfolder created by monthly organization. The badge layer uses
-// this, so it must not depend on the current preference value.
-func fileExistsInDownloadDir(filename string) bool {
+// findDownloadedFile reports the first regular file matching filename anywhere
+// the saver could have placed it: directly in the downloads folder, or inside
+// any YYYY-MM subfolder created by monthly organization. It intentionally does
+// not depend on the current preference value so existing files remain usable.
+func findDownloadedFile(filename string) string {
 	name := filepath.Base(strings.TrimSpace(filename))
 	if name == "" || name == "." || name == string(filepath.Separator) {
-		return false
+		return ""
 	}
 	s := loadSettings()
 	dir := s.DownloadDir
 	if strings.TrimSpace(dir) == "" {
-		return false
+		return ""
 	}
-	if _, err := os.Stat(filepath.Join(dir, name)); err == nil {
-		return true
+	if info, err := os.Stat(filepath.Join(dir, name)); err == nil && !info.IsDir() {
+		return filepath.Join(dir, name)
 	}
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		return false
+		return ""
 	}
 	for _, e := range entries {
 		if !e.IsDir() || len(e.Name()) != 7 || e.Name()[4] != '-' {
 			continue
 		}
-		if _, err := os.Stat(filepath.Join(dir, e.Name(), name)); err == nil {
-			return true
+		candidate := filepath.Join(dir, e.Name(), name)
+		if info, err := os.Stat(candidate); err == nil && !info.IsDir() {
+			return candidate
 		}
 	}
-	return false
+	return ""
+}
+
+// fileExistsInDownloadDir reports whether filename exists anywhere the saver
+// could have placed it. The badge layer uses this, so it must not depend on
+// the current preference value.
+func fileExistsInDownloadDir(filename string) bool {
+	return findDownloadedFile(filename) != ""
 }
 
 func saveDownloadedFileToDir(targetDir, filename, dataURI string) (string, error) {
