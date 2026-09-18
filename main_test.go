@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"os"
 	"os/exec"
 	"strings"
@@ -678,3 +679,74 @@ func TestDragAndDropUploadStabilization(t *testing.T) {
 		}
 	}
 }
+
+func TestSettingsFallbackButtonsAreHarmonized(t *testing.T) {
+	script := getInitScript("test-agent")
+
+	// Both fallback buttons must use bottom:14px;left:14px; to avoid vertical shifting
+	if !strings.Contains(script, "id = 'wa-settings-fallback-btn'") {
+		t.Fatal("missing wa-settings-fallback-btn")
+	}
+	if !strings.Contains(script, "id = 'wa-emergency-settings-btn'") {
+		t.Fatal("missing wa-emergency-settings-btn")
+	}
+
+	for _, want := range []string{
+		"left:14px;bottom:14px;z-index:9999998;width:38px;height:38px",
+		"left:14px;bottom:14px;z-index:2147483646;width:38px;height:38px",
+	} {
+		if !strings.Contains(script, want) {
+			t.Errorf("expected button positioning %q in script", want)
+		}
+	}
+}
+
+func TestToastNotificationHasHighestZIndex(t *testing.T) {
+	script := getInitScript("test-agent")
+
+	// Toast popup must have maximum z-index (2147483647) to stay in front of settings overlay (9999999)
+	want := "id = 'wa-hud-toast';\n\t\t\t\ttoast.style.cssText = 'position:fixed;top:16px;left:50%;transform:translateX(-50%);background:rgba(32,44,51,0.94);backdrop-filter:blur(10px);color:#00a884;border:1px solid rgba(0,168,132,0.4);border-radius:20px;padding:8px 20px;font-size:12.5px;font-weight:600;z-index:2147483647;"
+	if !strings.Contains(script, "z-index:2147483647") {
+		t.Errorf("toast notification must use z-index 2147483647 to prevent being hidden behind modal, got: %s", want)
+	}
+}
+
+func TestAutoStartStateRefreshesFromNative(t *testing.T) {
+	script := getInitScript("test-agent")
+
+	for _, want := range []string{
+		"window.getAutoStartNative",
+		"refreshAutoStartState",
+		"window.refreshAutoStartState",
+	} {
+		if !strings.Contains(script, want) {
+			t.Errorf("auto-start module missing %q", want)
+		}
+	}
+}
+
+func TestWindowStateMaximizedSerialization(t *testing.T) {
+	s := WindowState{
+		X:         100,
+		Y:         200,
+		Width:     1200,
+		Height:    800,
+		Maximized: true,
+	}
+	data, err := json.Marshal(s)
+	if err != nil {
+		t.Fatalf("failed to marshal WindowState: %v", err)
+	}
+	if !strings.Contains(string(data), `"maximized":true`) {
+		t.Errorf("expected maximized in JSON, got: %s", string(data))
+	}
+
+	var parsed WindowState
+	if err := json.Unmarshal(data, &parsed); err != nil {
+		t.Fatalf("failed to unmarshal WindowState: %v", err)
+	}
+	if !parsed.Maximized {
+		t.Errorf("expected parsed.Maximized to be true")
+	}
+}
+

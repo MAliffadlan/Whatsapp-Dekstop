@@ -1030,12 +1030,21 @@ func getLaunchAgentPath() string {
 	return filepath.Join(home, "Library", "LaunchAgents", "com.whatsapp.desk.plist")
 }
 
+func isAutoStartMac() bool {
+	plistPath := getLaunchAgentPath()
+	if plistPath == "" {
+		return false
+	}
+	_, err := os.Stat(plistPath)
+	return err == nil
+}
+
 func toggleAutoStartMac() bool {
 	plistPath := getLaunchAgentPath()
 	if plistPath == "" {
 		return false
 	}
-	if _, err := os.Stat(plistPath); err == nil {
+	if isAutoStartMac() {
 		_ = os.Remove(plistPath)
 		return false
 	}
@@ -1156,7 +1165,10 @@ func runApp() {
 		return C.toggleAlwaysOnTopInt(w.Window()) != 0
 	})
 
-	// 10. Bind Auto-Start toggle
+	// 10. Bind Auto-Start query and toggle
+	_ = w.Bind("getAutoStartNative", func() bool {
+		return isAutoStartMac()
+	})
 	_ = w.Bind("toggleAutoStartNative", func() bool {
 		return toggleAutoStartMac()
 	})
