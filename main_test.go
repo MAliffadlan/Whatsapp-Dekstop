@@ -379,6 +379,23 @@ func TestThemeSwitchDoesNotOverrideNativeMediaQueriesOrLoseUserChoice(t *testing
 	}
 }
 
+func TestMacMediaPermissionUXIncludesSettingsAndRetryControls(t *testing.T) {
+	script := getInitScript("test-agent")
+	for _, want := range []string{
+		"getCameraPermissionNative",
+		"getMicrophonePermissionNative",
+		"openMediaPrivacySettingsNative('camera')",
+		"wa-media-permission-settings",
+		"wa-media-permission-retry",
+		"Privacy & Security → Camera/Microphone",
+		"getUserMedia({ audio: true, video: true })",
+	} {
+		if !strings.Contains(script, want) {
+			t.Errorf("macOS media permission UX is missing %q", want)
+		}
+	}
+}
+
 func TestAllPlatformsApplySavedThemeToNativeWindow(t *testing.T) {
 	cases := []struct {
 		file   string
