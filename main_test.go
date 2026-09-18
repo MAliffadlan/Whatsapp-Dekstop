@@ -224,11 +224,9 @@ func TestPrivacyModeUsesVisualBlurWithChatListHoverUnblur(t *testing.T) {
 	for _, want := range []string{
 		"filter: blur(6px) !important",
 		"filter: none !important",
-		"#pane-side [role=\"row\"]:hover",
-		"#pane-side [role=\"listitem\"]:hover",
-		"#pane-side [data-testid=\"cell-frame-container\"]:hover",
-		"#pane-side div[tabindex=\"-1\"]:hover",
 		"[data-testid=\"msg-container\"]:hover",
+		"data-wa-privacy-hover",
+		"function privacyChatRowFromTarget(target)",
 	} {
 		if !strings.Contains(script, want) {
 			t.Errorf("privacy blur styling is missing %q", want)
@@ -239,6 +237,9 @@ func TestPrivacyModeUsesVisualBlurWithChatListHoverUnblur(t *testing.T) {
 	}
 	if strings.Contains(script, "#pane-side span:hover") {
 		t.Fatal("chat-list privacy reveal must remain scoped to the hovered chat container")
+	}
+	if strings.Contains(script, "#pane-side [role=\"row\"]:hover span") {
+		t.Fatal("chat-list privacy reveal must not depend on broad row hover selectors")
 	}
 }
 

@@ -1606,24 +1606,13 @@ func getInitScript(ua string) string {
 				'.privacy-mode [data-testid="chat-list"] [data-testid="cell-frame-container"] span:not([data-wa-time]),',
 				'.privacy-mode [data-testid="chat-list"] div[tabindex="-1"] span:not([data-wa-time])',
 				'{ filter: blur(6px) !important; transition: filter 0.15s ease-out !important; }',
-				// Hovering any row or container restores its contents instantly.
-				'.privacy-mode #pane-side [role="row"]:hover span,',
-				'.privacy-mode #pane-side [role="listitem"]:hover span,',
-				'.privacy-mode #pane-side [data-testid="cell-frame-container"]:hover span,',
-				'.privacy-mode #pane-side div[tabindex="-1"]:hover span,',
-				'.privacy-mode #pane-side div._ak8l:hover span,',
-				'.privacy-mode #pane-side [role="row"]:hover ._ak8q,',
-				'.privacy-mode #pane-side [role="listitem"]:hover ._ak8q,',
-				'.privacy-mode #pane-side [data-testid="cell-frame-container"]:hover ._ak8q,',
-				'.privacy-mode #pane-side div[tabindex="-1"]:hover ._ak8q,',
-				'.privacy-mode #pane-side [role="row"]:hover ._ak8k,',
-				'.privacy-mode #pane-side [role="listitem"]:hover ._ak8k,',
-				'.privacy-mode #pane-side [data-testid="cell-frame-container"]:hover ._ak8k,',
-				'.privacy-mode #pane-side div[tabindex="-1"]:hover ._ak8k,',
-				'.privacy-mode [data-testid="chat-list"] [role="row"]:hover span,',
-				'.privacy-mode [data-testid="chat-list"] [role="listitem"]:hover span,',
-				'.privacy-mode [data-testid="chat-list"] [data-testid="cell-frame-container"]:hover span,',
-				'.privacy-mode [data-testid="chat-list"] div[tabindex="-1"]:hover span',
+				// Reveal is driven by an explicitly marked row. Relying on broad
+				// :hover selectors is unsafe because WhatsApp nests list containers
+				// and may make an ancestor appear hovered for every chat.
+				'.privacy-mode #pane-side [data-wa-privacy-hover="1"] span:not([data-wa-time]),',
+				'.privacy-mode #pane-side [data-wa-privacy-hover="1"] ._ak8q,',
+				'.privacy-mode #pane-side [data-wa-privacy-hover="1"] ._ak8k,',
+				'.privacy-mode [data-testid="chat-list"] [data-wa-privacy-hover="1"] span:not([data-wa-time])',
 				'{ filter: none !important; }',
 				// Layer 2: everything textual inside a message bubble.
 				// Hovering the bubble restores the whole subtree.
@@ -1668,14 +1657,8 @@ func getInitScript(ua string) string {
 				'.privacy-mode.blur-avatars #main .message-in img,',
 				'.privacy-mode.blur-avatars #main .message-out img',
 				'{ filter: blur(12px) !important; transition: filter 0.15s ease-out !important; }',
-				'.privacy-mode.blur-avatars #pane-side [role="row"]:hover img,',
-				'.privacy-mode.blur-avatars #pane-side [role="listitem"]:hover img,',
-				'.privacy-mode.blur-avatars #pane-side [data-testid="cell-frame-container"]:hover img,',
-				'.privacy-mode.blur-avatars #pane-side div[tabindex="-1"]:hover img,',
-				'.privacy-mode.blur-avatars [data-testid="chat-list"] [role="row"]:hover img,',
-				'.privacy-mode.blur-avatars [data-testid="chat-list"] [role="listitem"]:hover img,',
-				'.privacy-mode.blur-avatars [data-testid="chat-list"] [data-testid="cell-frame-container"]:hover img,',
-				'.privacy-mode.blur-avatars [data-testid="chat-list"] div[tabindex="-1"]:hover img,',
+				'.privacy-mode.blur-avatars #pane-side [data-wa-privacy-hover="1"] img,',
+				'.privacy-mode.blur-avatars [data-testid="chat-list"] [data-wa-privacy-hover="1"] img,',
 				'.privacy-mode.blur-avatars #main header:hover img,',
 				'.privacy-mode.blur-avatars #main header img:hover,',
 				'.privacy-mode.blur-avatars #main .message-in:hover img,',
@@ -1692,6 +1675,31 @@ func getInitScript(ua string) string {
 				'.wa-drag-over { outline: 3px solid #00a884; outline-offset: -3px; }',
 				'.wa-drag-over * { pointer-events: none; }'
 			].join('\n');
+
+			function privacyChatRowFromTarget(target) {
+				var paneSide = document.getElementById('pane-side');
+				var node = target && target.nodeType === 1 ? target : null;
+				while (node && node !== paneSide) {
+					if (node.matches && (node.matches('[role="row"]') ||
+						node.matches('[role="listitem"]') ||
+						node.matches('[data-testid="cell-frame-container"]') ||
+						node.matches('div[tabindex="-1"]'))) {
+						return node;
+					}
+					node = node.parentElement;
+				}
+				return null;
+			}
+			document.addEventListener('mouseover', function(e) {
+				var row = privacyChatRowFromTarget(e.target);
+				if (row) row.setAttribute('data-wa-privacy-hover', '1');
+			}, true);
+			document.addEventListener('mouseout', function(e) {
+				var row = privacyChatRowFromTarget(e.target);
+				if (row && (!e.relatedTarget || !row.contains(e.relatedTarget))) {
+					row.removeAttribute('data-wa-privacy-hover');
+				}
+			}, true);
 
 			function applyPrivacyMode(active, silent) {
 				isPrivacyActive = !!active;
