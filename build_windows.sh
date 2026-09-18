@@ -5,7 +5,7 @@
 set -euo pipefail
 cd /Users/sepyankristanto/Documents/3.Data_Lainnya/whatsapp-web.view
 
-VERSION="${1:-1.5.9.4}"
+VERSION="${1:-1.5.9.5}"
 OUT="dist_win/WhatsAppDesk.exe"
 mkdir -p dist_win
 
