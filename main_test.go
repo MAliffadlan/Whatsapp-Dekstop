@@ -264,6 +264,36 @@ func TestPrivacyModeCopyMatchesTimestampBlurBehavior(t *testing.T) {
 	}
 }
 
+func TestPrivacyModeCoversArchivedChatsAndAllAvatarVariants(t *testing.T) {
+	script := getInitScript("test-agent")
+	checks := []string{
+		// Sidebar & Archived chats text protection
+		"#side [role=\"row\"] span",
+		"#side [role=\"listitem\"] span",
+		"div[aria-label*=\"Archived\" i]",
+		// Avatar blur covers images, svg images, avatar container _ak8h, and default user SVGs
+		".privacy-mode.blur-avatars #side img",
+		".privacy-mode.blur-avatars #side image",
+		".privacy-mode.blur-avatars #side ._ak8h",
+		".privacy-mode.blur-avatars #side [data-testid=\"default-user\"]",
+		".privacy-mode.blur-avatars #side svg[viewBox=\"0 0 49 49\"]",
+		".privacy-mode.blur-avatars #side div.x78zum5 > div.x6s0dn4 > div",
+		".privacy-mode.blur-avatars #main header ._ak8h",
+		// Symmetrical hover unblur for row peek and direct avatar hover
+		"#side [role=\"row\"]:hover ._ak8h",
+		"#side [role=\"row\"]:hover image",
+		"#side ._ak8h:hover",
+		"#side ._ak8h:hover *",
+		// Sparing timestamps in #side (including archived view)
+		"tagTimesIn(document.getElementById('side') || document.getElementById('pane-side'))",
+	}
+	for _, want := range checks {
+		if !strings.Contains(script, want) {
+			t.Errorf("privacy rules missing required coverage for %q", want)
+		}
+	}
+}
+
 func TestThemeReapplyIsBoundedAndAvoidsObserverFeedbackLoop(t *testing.T) {
 	script := getInitScript("test-agent")
 	for _, want := range []string{

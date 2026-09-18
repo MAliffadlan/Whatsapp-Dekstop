@@ -1593,6 +1593,16 @@ func getInitScript(ua string) string {
 			// on hover across all modern WhatsApp Web DOM structures.
 			styleEl.textContent = [
 				// Layer 1: names + previews in the chat list, hover row/item to peek.
+				// Chat-list timestamps are included in this blur layer.
+				// Covers #side generally (including Archived chats drawer & filtered views)
+				// as well as #pane-side and modern aria/data-testid containers.
+				'.privacy-mode #side [role="row"] span,',
+				'.privacy-mode #side [role="listitem"] span,',
+				'.privacy-mode #side [data-testid="cell-frame-container"] span,',
+				'.privacy-mode #side div[tabindex="-1"] span,',
+				'.privacy-mode #side div._ak8l span,',
+				'.privacy-mode #side ._ak8q,',
+				'.privacy-mode #side ._ak8k,',
 				'.privacy-mode #pane-side [role="row"] span,',
 				'.privacy-mode #pane-side [role="listitem"] span,',
 				'.privacy-mode #pane-side [data-testid="cell-frame-container"] span,',
@@ -1602,15 +1612,14 @@ func getInitScript(ua string) string {
 				'.privacy-mode [data-testid="chat-list"] [role="row"] span,',
 				'.privacy-mode [data-testid="chat-list"] [role="listitem"] span,',
 				'.privacy-mode [data-testid="chat-list"] [data-testid="cell-frame-container"] span,',
-				'.privacy-mode [data-testid="chat-list"] div[tabindex="-1"] span',
+				'.privacy-mode [data-testid="chat-list"] div[tabindex="-1"] span,',
+				'.privacy-mode div[aria-label="Chat list"] span,',
+				'.privacy-mode div[aria-label*="Archived" i] span',
 				'{ filter: blur(6px) !important; transition: filter 0.15s ease-out !important; }',
-				// Reveal is driven by an explicitly marked row. Relying on broad
-				// :hover selectors is unsafe because WhatsApp nests list containers
-				// and may make an ancestor appear hovered for every chat.
-				'.privacy-mode #pane-side [data-wa-privacy-hover="1"] span,',
-				'.privacy-mode #pane-side [data-wa-privacy-hover="1"] ._ak8q,',
-				'.privacy-mode #pane-side [data-wa-privacy-hover="1"] ._ak8k,',
-				'.privacy-mode [data-testid="chat-list"] [data-wa-privacy-hover="1"] span,',
+				// Hovering any row or container restores its contents instantly.
+				'.privacy-mode [data-wa-privacy-hover="1"] span,',
+				'.privacy-mode [data-wa-privacy-hover="1"] ._ak8q,',
+				'.privacy-mode [data-wa-privacy-hover="1"] ._ak8k,',
 				'.privacy-mode [data-wa-privacy-reveal="1"]',
 				'{ filter: none !important; }',
 				// Layer 2: everything textual inside a message bubble.
@@ -1650,18 +1659,140 @@ func getInitScript(ua string) string {
 				'.privacy-mode #main header span:hover',
 				'{ filter: none !important; }',
 				// Layer 4: optional avatar blur (.blur-avatars on <html>).
+				// Supports standard contacts, pinned chats, disappearing messages,
+				// contacts posting a status (with status rings), archived chats,
+				// and contacts with or without custom profile pictures (SVG/default user).
+				'.privacy-mode.blur-avatars #side img,',
+				'.privacy-mode.blur-avatars #side image,',
+				'.privacy-mode.blur-avatars #side ._ak8h,',
+				'.privacy-mode.blur-avatars #side [data-testid="default-user"],',
+				'.privacy-mode.blur-avatars #side [data-icon="default-user"],',
+				'.privacy-mode.blur-avatars #side [data-icon="default-group"],',
+				'.privacy-mode.blur-avatars #side [data-icon="community-outline"],',
+				'.privacy-mode.blur-avatars #side svg[viewBox="0 0 49 49"],',
+				'.privacy-mode.blur-avatars #side [role="row"] [role="button"] > div:first-child,',
+				'.privacy-mode.blur-avatars #side [role="listitem"] [role="button"] > div:first-child,',
+				'.privacy-mode.blur-avatars #side div.x78zum5 > div.x6s0dn4 > div,',
 				'.privacy-mode.blur-avatars #pane-side img,',
+				'.privacy-mode.blur-avatars #pane-side image,',
+				'.privacy-mode.blur-avatars #pane-side ._ak8h,',
+				'.privacy-mode.blur-avatars #pane-side [data-testid="default-user"],',
 				'.privacy-mode.blur-avatars [data-testid="chat-list"] img,',
+				'.privacy-mode.blur-avatars [data-testid="chat-list"] image,',
+				'.privacy-mode.blur-avatars [data-testid="chat-list"] ._ak8h,',
+				'.privacy-mode.blur-avatars [data-testid="chat-list"] [data-testid="default-user"],',
+				'.privacy-mode.blur-avatars div[aria-label="Chat list"] img,',
+				'.privacy-mode.blur-avatars div[aria-label="Chat list"] image,',
+				'.privacy-mode.blur-avatars div[aria-label="Chat list"] ._ak8h,',
+				'.privacy-mode.blur-avatars div[aria-label*="Archived" i] img,',
+				'.privacy-mode.blur-avatars div[aria-label*="Archived" i] image,',
+				'.privacy-mode.blur-avatars div[aria-label*="Archived" i] ._ak8h,',
 				'.privacy-mode.blur-avatars #main header img,',
-				'.privacy-mode.blur-avatars #main .message-in img,',
-				'.privacy-mode.blur-avatars #main .message-out img',
+				'.privacy-mode.blur-avatars #main header image,',
+				'.privacy-mode.blur-avatars #main header ._ak8h,',
+				'.privacy-mode.blur-avatars #main header [data-testid="default-user"],',
+				'.privacy-mode.blur-avatars #main header [data-icon="default-user"],',
+				'.privacy-mode.blur-avatars #main header svg[viewBox="0 0 49 49"],',
+				'.privacy-mode.blur-avatars #main header div[role="button"]:first-child div.x1n2onr6.x16ye13r.x5lhr3w,',
+				'.privacy-mode.blur-avatars #main .message-in img:not([data-emoji]),',
+				'.privacy-mode.blur-avatars #main .message-in image,',
+				'.privacy-mode.blur-avatars #main .message-in ._ak8h,',
+				'.privacy-mode.blur-avatars #main .message-out img:not([data-emoji]),',
+				'.privacy-mode.blur-avatars #main .message-out image,',
+				'.privacy-mode.blur-avatars #main .message-out ._ak8h,',
+				'.privacy-mode.blur-avatars #main [data-testid="msg-container"] ._ak8h,',
+				'.privacy-mode.blur-avatars div[role="dialog"] ._ak8h,',
+				'.privacy-mode.blur-avatars div[role="dialog"] img',
 				'{ filter: blur(12px) !important; transition: filter 0.15s ease-out !important; }',
-				'.privacy-mode.blur-avatars #pane-side [data-wa-privacy-hover="1"] img,',
-				'.privacy-mode.blur-avatars [data-testid="chat-list"] [data-wa-privacy-hover="1"] img,',
+				// Symmetrical unblur on hovering row, item, or the avatar directly.
+				'.privacy-mode.blur-avatars #side [role="row"]:hover img,',
+				'.privacy-mode.blur-avatars #side [role="row"]:hover image,',
+				'.privacy-mode.blur-avatars #side [role="row"]:hover ._ak8h,',
+				'.privacy-mode.blur-avatars #side [role="row"]:hover [data-testid="default-user"],',
+				'.privacy-mode.blur-avatars #side [role="row"]:hover [data-icon="default-user"],',
+				'.privacy-mode.blur-avatars #side [role="row"]:hover svg[viewBox="0 0 49 49"],',
+				'.privacy-mode.blur-avatars #side [role="row"]:hover [role="button"] > div:first-child,',
+				'.privacy-mode.blur-avatars #side [role="row"]:hover div.x78zum5 > div.x6s0dn4 > div,',
+				'.privacy-mode.blur-avatars #side [role="listitem"]:hover img,',
+				'.privacy-mode.blur-avatars #side [role="listitem"]:hover image,',
+				'.privacy-mode.blur-avatars #side [role="listitem"]:hover ._ak8h,',
+				'.privacy-mode.blur-avatars #side [role="listitem"]:hover [data-testid="default-user"],',
+				'.privacy-mode.blur-avatars #side [role="listitem"]:hover svg[viewBox="0 0 49 49"],',
+				'.privacy-mode.blur-avatars #side [role="listitem"]:hover [role="button"] > div:first-child,',
+				'.privacy-mode.blur-avatars #side [data-testid="cell-frame-container"]:hover img,',
+				'.privacy-mode.blur-avatars #side [data-testid="cell-frame-container"]:hover image,',
+				'.privacy-mode.blur-avatars #side [data-testid="cell-frame-container"]:hover ._ak8h,',
+				'.privacy-mode.blur-avatars #side div[tabindex="-1"]:hover img,',
+				'.privacy-mode.blur-avatars #side div[tabindex="-1"]:hover image,',
+				'.privacy-mode.blur-avatars #side div[tabindex="-1"]:hover ._ak8h,',
+				'.privacy-mode.blur-avatars #side div._ak8l:hover img,',
+				'.privacy-mode.blur-avatars #side div._ak8l:hover image,',
+				'.privacy-mode.blur-avatars #side div._ak8l:hover ._ak8h,',
+				'.privacy-mode.blur-avatars #side img:hover,',
+				'.privacy-mode.blur-avatars #side image:hover,',
+				'.privacy-mode.blur-avatars #side ._ak8h:hover,',
+				'.privacy-mode.blur-avatars #side ._ak8h:hover *,',
+				'.privacy-mode.blur-avatars #side [data-testid="default-user"]:hover,',
+				'.privacy-mode.blur-avatars #side svg[viewBox="0 0 49 49"]:hover,',
+				'.privacy-mode.blur-avatars #pane-side [role="row"]:hover img,',
+				'.privacy-mode.blur-avatars #pane-side [role="row"]:hover image,',
+				'.privacy-mode.blur-avatars #pane-side [role="row"]:hover ._ak8h,',
+				'.privacy-mode.blur-avatars #pane-side [role="listitem"]:hover img,',
+				'.privacy-mode.blur-avatars #pane-side [role="listitem"]:hover image,',
+				'.privacy-mode.blur-avatars #pane-side [role="listitem"]:hover ._ak8h,',
+				'.privacy-mode.blur-avatars #pane-side [data-testid="cell-frame-container"]:hover img,',
+				'.privacy-mode.blur-avatars #pane-side [data-testid="cell-frame-container"]:hover image,',
+				'.privacy-mode.blur-avatars #pane-side [data-testid="cell-frame-container"]:hover ._ak8h,',
+				'.privacy-mode.blur-avatars #pane-side div[tabindex="-1"]:hover img,',
+				'.privacy-mode.blur-avatars #pane-side div[tabindex="-1"]:hover image,',
+				'.privacy-mode.blur-avatars #pane-side div[tabindex="-1"]:hover ._ak8h,',
+				'.privacy-mode.blur-avatars #pane-side div._ak8l:hover img,',
+				'.privacy-mode.blur-avatars #pane-side div._ak8l:hover image,',
+				'.privacy-mode.blur-avatars #pane-side div._ak8l:hover ._ak8h,',
+				'.privacy-mode.blur-avatars #pane-side img:hover,',
+				'.privacy-mode.blur-avatars #pane-side image:hover,',
+				'.privacy-mode.blur-avatars #pane-side ._ak8h:hover,',
+				'.privacy-mode.blur-avatars #pane-side ._ak8h:hover *,',
+				'.privacy-mode.blur-avatars [data-testid="chat-list"] [role="row"]:hover img,',
+				'.privacy-mode.blur-avatars [data-testid="chat-list"] [role="row"]:hover image,',
+				'.privacy-mode.blur-avatars [data-testid="chat-list"] [role="row"]:hover ._ak8h,',
+				'.privacy-mode.blur-avatars [data-testid="chat-list"] [role="listitem"]:hover img,',
+				'.privacy-mode.blur-avatars [data-testid="chat-list"] [role="listitem"]:hover image,',
+				'.privacy-mode.blur-avatars [data-testid="chat-list"] [role="listitem"]:hover ._ak8h,',
+				'.privacy-mode.blur-avatars [data-testid="chat-list"] [data-testid="cell-frame-container"]:hover img,',
+				'.privacy-mode.blur-avatars [data-testid="chat-list"] [data-testid="cell-frame-container"]:hover image,',
+				'.privacy-mode.blur-avatars [data-testid="chat-list"] [data-testid="cell-frame-container"]:hover ._ak8h,',
+				'.privacy-mode.blur-avatars [data-testid="chat-list"] div[tabindex="-1"]:hover img,',
+				'.privacy-mode.blur-avatars [data-testid="chat-list"] div[tabindex="-1"]:hover image,',
+				'.privacy-mode.blur-avatars [data-testid="chat-list"] div[tabindex="-1"]:hover ._ak8h,',
+				'.privacy-mode.blur-avatars div[aria-label="Chat list"] [role="row"]:hover img,',
+				'.privacy-mode.blur-avatars div[aria-label="Chat list"] [role="row"]:hover image,',
+				'.privacy-mode.blur-avatars div[aria-label="Chat list"] [role="row"]:hover ._ak8h,',
+				'.privacy-mode.blur-avatars div[aria-label*="Archived" i] [role="row"]:hover img,',
+				'.privacy-mode.blur-avatars div[aria-label*="Archived" i] [role="row"]:hover image,',
+				'.privacy-mode.blur-avatars div[aria-label*="Archived" i] [role="row"]:hover ._ak8h,',
+				'.privacy-mode.blur-avatars div[aria-label*="Archived" i] [role="listitem"]:hover img,',
+				'.privacy-mode.blur-avatars div[aria-label*="Archived" i] [role="listitem"]:hover image,',
+				'.privacy-mode.blur-avatars div[aria-label*="Archived" i] [role="listitem"]:hover ._ak8h,',
 				'.privacy-mode.blur-avatars #main header:hover img,',
+				'.privacy-mode.blur-avatars #main header:hover image,',
+				'.privacy-mode.blur-avatars #main header:hover ._ak8h,',
+				'.privacy-mode.blur-avatars #main header:hover [data-testid="default-user"],',
+				'.privacy-mode.blur-avatars #main header:hover svg[viewBox="0 0 49 49"],',
 				'.privacy-mode.blur-avatars #main header img:hover,',
+				'.privacy-mode.blur-avatars #main header image:hover,',
+				'.privacy-mode.blur-avatars #main header ._ak8h:hover,',
+				'.privacy-mode.blur-avatars #main header ._ak8h:hover *,',
+				'.privacy-mode.blur-avatars #main header [data-testid="default-user"]:hover,',
+				'.privacy-mode.blur-avatars #main header svg[viewBox="0 0 49 49"]:hover,',
 				'.privacy-mode.blur-avatars #main .message-in:hover img,',
-				'.privacy-mode.blur-avatars #main .message-out:hover img',
+				'.privacy-mode.blur-avatars #main .message-in:hover image,',
+				'.privacy-mode.blur-avatars #main .message-in:hover ._ak8h,',
+				'.privacy-mode.blur-avatars #main .message-out:hover img,',
+				'.privacy-mode.blur-avatars #main .message-out:hover image,',
+				'.privacy-mode.blur-avatars #main .message-out:hover ._ak8h,',
+				'.privacy-mode.blur-avatars div[role="dialog"] ._ak8h:hover,',
+				'.privacy-mode.blur-avatars div[role="dialog"] img:hover',
 				'{ filter: none !important; }',
 				// Layer 5: fullscreen media viewer
 				'.privacy-mode [data-testid="media-viewer"] img,',
@@ -1694,9 +1825,7 @@ func getInitScript(ua string) string {
 						node.matches('[role="listitem"]') ||
 						node.matches('[data-testid="cell-frame-container"]') ||
 						node.matches('div[tabindex="-1"]') ||
-						node.matches('div._ak8l'))) {
-						return node;
-					}
+						node.matches('div._ak8l'))) return node;
 					node = node.parentElement;
 				}
 				return null;
@@ -1734,17 +1863,11 @@ func getInitScript(ua string) string {
 				var row = privacyChatRowFromTarget(target);
 				if (row) markPrivacyHoverRow(row);
 			}
-			document.addEventListener('mouseover', function(e) {
-				updatePrivacyHoverFromTarget(e.target);
-			}, true);
-			document.addEventListener('mousemove', function(e) {
-				updatePrivacyHoverFromTarget(e.target);
-			}, true);
+			document.addEventListener('mouseover', function(e) { updatePrivacyHoverFromTarget(e.target); }, true);
+			document.addEventListener('mousemove', function(e) { updatePrivacyHoverFromTarget(e.target); }, true);
 			document.addEventListener('mouseout', function(e) {
 				var row = privacyChatRowFromTarget(e.target);
-				if (row && (!e.relatedTarget || !row.contains(e.relatedTarget))) {
-					clearPrivacyHoverRow();
-				}
+				if (row && (!e.relatedTarget || !row.contains(e.relatedTarget))) clearPrivacyHoverRow();
 			}, true);
 
 			function applyPrivacyMode(active, silent) {
@@ -1808,7 +1931,7 @@ func getInitScript(ua string) string {
 			setInterval(function() {
 				if (!isPrivacyActive || shouldPauseBackgroundWork()) return;
 				tagTimesIn(document.getElementById('main'));
-				tagTimesIn(document.getElementById('pane-side'));
+				tagTimesIn(document.getElementById('side') || document.getElementById('pane-side'));
 			}, 3000);
 			window.setBlurAvatars = function(on) {
 				on = !!on;
