@@ -229,6 +229,8 @@ func TestPrivacyModeUsesVisualBlurWithChatListHoverUnblur(t *testing.T) {
 		"data-wa-privacy-reveal",
 		"function privacyChatRowFromTarget(target)",
 		"function markPrivacyHoverRow(row)",
+		"function updatePrivacyHoverFromTarget(target)",
+		"setProperty('filter', 'none', 'important')",
 		"div._ak8l",
 	} {
 		if !strings.Contains(script, want) {
