@@ -789,10 +789,21 @@ func getInitScript(ua string) string {
 				}, 400);
 			}
 
+			// File-picker uploads do not pass through the drag/drop handler above.
+			// Mark them as uploads as soon as WhatsApp receives the selected files so
+			// the document preview hooks below do not mistake the composer blob for a
+			// downloaded attachment.
+			function handleFileInputChange(e) {
+				var input = e && e.target;
+				if (!input || input.tagName !== 'INPUT' || input.type !== 'file') return;
+				if (input.files && input.files.length > 0) lastUploadAt = Date.now();
+			}
+
 			document.addEventListener('dragenter', handleDragEnter, true);
 			document.addEventListener('dragleave', handleDragLeave, true);
 			document.addEventListener('dragover', handleDragOver, true);
 			document.addEventListener('drop', handleDrop, true);
+			document.addEventListener('change', handleFileInputChange, true);
 		});
 
 		// Helper: Decode base64 dataURI to Uint8Array

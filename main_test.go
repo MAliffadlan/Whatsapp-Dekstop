@@ -71,6 +71,20 @@ func TestDownloadInterceptorCoalescesDuplicateRequests(t *testing.T) {
 	}
 }
 
+func TestFilePickerUploadsDoNotTriggerDocumentPreview(t *testing.T) {
+	script := getInitScript("test-agent")
+	for _, want := range []string{
+		"function handleFileInputChange(e)",
+		"input.type !== 'file'",
+		"if (input.files && input.files.length > 0) lastUploadAt = Date.now();",
+		"document.addEventListener('change', handleFileInputChange, true)",
+	} {
+		if !strings.Contains(script, want) {
+			t.Errorf("file-picker upload guard is missing %q", want)
+		}
+	}
+}
+
 func TestOfficeDocumentPreviewSupport(t *testing.T) {
 	script := getInitScript("test-agent")
 
@@ -749,4 +763,3 @@ func TestWindowStateMaximizedSerialization(t *testing.T) {
 		t.Errorf("expected parsed.Maximized to be true")
 	}
 }
-
