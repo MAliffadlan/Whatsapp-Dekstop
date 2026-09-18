@@ -455,6 +455,7 @@ func executeUpdate(ui UIController, downloadURL string) error {
 	ext := updateDownloadExtension(downloadURL)
 	destFile := filepath.Join(os.TempDir(), "whatsapp_update_download"+ext)
 	_ = os.Remove(destFile)
+	defer os.Remove(destFile)
 
 	ui.Dispatch(func() {
 		ui.Eval("if (window.onUpdateStatus) { window.onUpdateStatus('Downloading update... 0%'); }")
