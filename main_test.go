@@ -76,6 +76,16 @@ func TestExplicitDocumentDownloadsDoNotAutoOpenPreview(t *testing.T) {
 	if strings.Count(script, "captureDownload(href, name, false)") < 2 {
 		t.Fatal("explicit document download paths must disable auto-preview")
 	}
+	for _, want := range []string{
+		"var lastExplicitDownloadAt = 0",
+		"function isRecentExplicitDownload()",
+		"!isRecentExplicitDownload()",
+		"target.closest(viewerDownloadSelector)",
+	} {
+		if !strings.Contains(script, want) {
+			t.Errorf("explicit download preview guard is missing %q", want)
+		}
+	}
 }
 
 func TestOfficeDocumentPreviewSupport(t *testing.T) {
