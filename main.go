@@ -529,8 +529,12 @@ func getInitScript(ua string) string {
 
 		// Drag & Drop file upload to chat (stabilized for macOS and Windows)
 		var lastUploadAt = 0;
+		var lastExplicitDownloadAt = 0;
 		function isRecentUpload() {
 			return (Date.now() - lastUploadAt) < 6000;
+		}
+		function isRecentExplicitDownload() {
+			return (Date.now() - lastExplicitDownloadAt) < 6000;
 		}
 
 		waRunModule('drag-drop-paste', function() {
@@ -1292,7 +1296,7 @@ func getInitScript(ua string) string {
 					bType === 'text/csv' || bType === 'text/plain' ||
 					(blob && (blob.type === 'application/octet-stream' || bType === '') && isRecentPDFIntent());
 
-				if (blob && isDocBlob && !isRecentUpload()) {
+				if (blob && isDocBlob && !isRecentUpload() && !isRecentExplicitDownload()) {
 					var name = lastClickedDocName || 'document';
 					if (!name.includes('.')) {
 						if (bType.indexOf('pdf') >= 0) name += '.pdf';
@@ -2682,6 +2686,21 @@ func getInitScript(ua string) string {
 				'[data-icon="download-refreshed"]',
 				'[data-icon*="download"]'
 			].join(',');
+			function isExplicitDownloadMenuItem(target) {
+				if (!target || !target.closest) return false;
+				var item = target.closest('[role="menuitem"]');
+				if (!item) return false;
+				var label = (item.getAttribute('aria-label') || item.getAttribute('title') || item.innerText || '')
+					.replace(/\s+/g, ' ').trim();
+				return /^(download|unduh)$/i.test(label);
+			}
+			document.addEventListener('click', function(e) {
+				var target = e.target;
+				if (target && target.closest &&
+					(target.closest(viewerDownloadSelector) || isExplicitDownloadMenuItem(target))) {
+					lastExplicitDownloadAt = Date.now();
+				}
+			}, true);
 
 			function findVisibleViewerDownloadControl() {
 				var candidates = document.querySelectorAll(viewerDownloadSelector);
@@ -2736,7 +2755,10 @@ func getInitScript(ua string) string {
 				var href = this.href || this.getAttribute('href');
 				if ((downloadAttr !== null || this.download) && href && (href.indexOf('blob:') === 0 || href.indexOf('data:') === 0)) {
 					var name = downloadAttr || this.download || lastClickedDocName || 'whatsapp_media';
-					captureDownload(href, name, isDocumentFileName(name));
+					// An explicit download anchor means save only. Opening a document
+					// preview is reserved for clicking the document itself.
+					lastExplicitDownloadAt = Date.now();
+					captureDownload(href, name, false);
 					return;
 				}
 				return originalAnchorClick.apply(this, arguments);
@@ -2753,7 +2775,9 @@ func getInitScript(ua string) string {
 							e.preventDefault();
 							e.stopPropagation();
 							var name = downloadAttr || target.download || lastClickedDocName || 'whatsapp_media';
-							captureDownload(href, name, isDocumentFileName(name));
+							// The user clicked Download directly: do not open a second preview.
+							lastExplicitDownloadAt = Date.now();
+							captureDownload(href, name, false);
 							return;
 						}
 					}

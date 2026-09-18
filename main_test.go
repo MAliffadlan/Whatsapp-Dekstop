@@ -85,6 +85,25 @@ func TestFilePickerUploadsDoNotTriggerDocumentPreview(t *testing.T) {
 	}
 }
 
+func TestExplicitDocumentDownloadsDoNotAutoOpenPreview(t *testing.T) {
+	script := getInitScript("test-agent")
+	if strings.Count(script, "captureDownload(href, name, false)") < 2 {
+		t.Fatal("explicit document download paths must disable auto-preview")
+	}
+	for _, want := range []string{
+		"var lastExplicitDownloadAt = 0",
+		"function isRecentExplicitDownload()",
+		"!isRecentExplicitDownload()",
+		"function isExplicitDownloadMenuItem(target)",
+		"target.closest('[role=\"menuitem\"]')",
+		"target.closest(viewerDownloadSelector)",
+	} {
+		if !strings.Contains(script, want) {
+			t.Errorf("explicit download preview guard is missing %q", want)
+		}
+	}
+}
+
 func TestOfficeDocumentPreviewSupport(t *testing.T) {
 	script := getInitScript("test-agent")
 
