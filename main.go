@@ -2533,9 +2533,18 @@ func getInitScript(ua string) string {
 				'[data-icon="download-refreshed"]',
 				'[data-icon*="download"]'
 			].join(',');
+			function isExplicitDownloadMenuItem(target) {
+				if (!target || !target.closest) return false;
+				var item = target.closest('[role="menuitem"]');
+				if (!item) return false;
+				var label = (item.getAttribute('aria-label') || item.getAttribute('title') || item.innerText || '')
+					.replace(/\s+/g, ' ').trim();
+				return /^(download|unduh)$/i.test(label);
+			}
 			document.addEventListener('click', function(e) {
 				var target = e.target;
-				if (target && target.closest && target.closest(viewerDownloadSelector)) {
+				if (target && target.closest &&
+					(target.closest(viewerDownloadSelector) || isExplicitDownloadMenuItem(target))) {
 					lastExplicitDownloadAt = Date.now();
 				}
 			}, true);

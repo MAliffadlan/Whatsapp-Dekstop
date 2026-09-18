@@ -80,6 +80,8 @@ func TestExplicitDocumentDownloadsDoNotAutoOpenPreview(t *testing.T) {
 		"var lastExplicitDownloadAt = 0",
 		"function isRecentExplicitDownload()",
 		"!isRecentExplicitDownload()",
+		"function isExplicitDownloadMenuItem(target)",
+		"target.closest('[role=\"menuitem\"]')",
 		"target.closest(viewerDownloadSelector)",
 	} {
 		if !strings.Contains(script, want) {
