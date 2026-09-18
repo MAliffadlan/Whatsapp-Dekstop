@@ -202,7 +202,10 @@ static void postNativeMacNotification(const char* titleStr, const char* bodyStr)
     }
 }
 - (void)webView:(WKWebView *)webView requestMediaCapturePermissionForOrigin:(WKSecurityOrigin *)origin initiatedByFrame:(WKFrameInfo *)frame type:(WKMediaCaptureType)type decisionHandler:(void (^)(WKPermissionDecision decision))decisionHandler {
-    decisionHandler(WKPermissionDecisionGrant);
+    NSString *host = origin.host.lowercaseString;
+    BOOL isWhatsAppOrigin = [origin.protocol.lowercaseString isEqualToString:@"https"] &&
+        ([host isEqualToString:@"whatsapp.com"] || [host hasSuffix:@".whatsapp.com"]);
+    decisionHandler(isWhatsAppOrigin ? WKPermissionDecisionGrant : WKPermissionDecisionDeny);
 }
 - (WKWebView *)webView:(WKWebView *)webView createWebViewWithConfiguration:(WKWebViewConfiguration *)configuration forNavigationAction:(WKNavigationAction *)navigationAction windowFeatures:(WKWindowFeatures *)windowFeatures {
     if (!navigationAction.targetFrame.isMainFrame) {
