@@ -104,6 +104,25 @@ func TestExplicitDocumentDownloadsDoNotAutoOpenPreview(t *testing.T) {
 	}
 }
 
+func TestDownloadFilenameResolutionAvoidsGenericNames(t *testing.T) {
+	script := getInitScript("test-agent")
+	for _, want := range []string{
+		"function cleanDownloadFilename(name)",
+		"function isPlaceholderDownloadFilename(name)",
+		"function filenameFromContentDisposition(header)",
+		"function resolveDownloadFilename(filename, contentDisposition)",
+		"Content-Disposition",
+		"whatsapp_file",
+	} {
+		if !strings.Contains(script, want) {
+			t.Errorf("download filename handling is missing %q", want)
+		}
+	}
+	if strings.Contains(script, "var name = downloadAttr || this.download || lastClickedDocName || 'whatsapp_media'") {
+		t.Fatal("download anchors must resolve generic filenames before saving")
+	}
+}
+
 func TestOfficeDocumentPreviewSupport(t *testing.T) {
 	script := getInitScript("test-agent")
 
