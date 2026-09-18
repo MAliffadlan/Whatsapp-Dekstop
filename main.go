@@ -1612,7 +1612,8 @@ func getInitScript(ua string) string {
 				'.privacy-mode #pane-side [data-wa-privacy-hover="1"] span:not([data-wa-time]),',
 				'.privacy-mode #pane-side [data-wa-privacy-hover="1"] ._ak8q,',
 				'.privacy-mode #pane-side [data-wa-privacy-hover="1"] ._ak8k,',
-				'.privacy-mode [data-testid="chat-list"] [data-wa-privacy-hover="1"] span:not([data-wa-time])',
+				'.privacy-mode [data-testid="chat-list"] [data-wa-privacy-hover="1"] span:not([data-wa-time]),',
+				'.privacy-mode [data-wa-privacy-reveal="1"]',
 				'{ filter: none !important; }',
 				// Layer 2: everything textual inside a message bubble.
 				// Hovering the bubble restores the whole subtree.
@@ -1676,10 +1677,21 @@ func getInitScript(ua string) string {
 				'.wa-drag-over * { pointer-events: none; }'
 			].join('\n');
 
-			function privacyChatRowFromTarget(target) {
-				var paneSide = document.getElementById('pane-side');
+			var activePrivacyHoverRow = null;
+			function privacyChatListRootFromTarget(target) {
 				var node = target && target.nodeType === 1 ? target : null;
-				while (node && node !== paneSide) {
+				while (node && node !== document.body) {
+					if (node.id === 'pane-side' || node.id === 'side' ||
+						node.getAttribute('data-testid') === 'chat-list' ||
+						node.getAttribute('aria-label') === 'Chat list') return node;
+					node = node.parentElement;
+				}
+				return null;
+			}
+			function privacyChatRowFromTarget(target) {
+				var listRoot = privacyChatListRootFromTarget(target);
+				var node = target && target.nodeType === 1 ? target : null;
+				while (node && node !== listRoot && node !== document.body) {
 					if (node.matches && (node.matches('[role="row"]') ||
 						node.matches('[role="listitem"]') ||
 						node.matches('[data-testid="cell-frame-container"]') ||
@@ -1690,14 +1702,30 @@ func getInitScript(ua string) string {
 				}
 				return null;
 			}
+			function clearPrivacyHoverRow() {
+				if (!activePrivacyHoverRow) return;
+				activePrivacyHoverRow.removeAttribute('data-wa-privacy-hover');
+				var revealed = activePrivacyHoverRow.querySelectorAll('[data-wa-privacy-reveal="1"]');
+				for (var i = 0; i < revealed.length; i++) revealed[i].removeAttribute('data-wa-privacy-reveal');
+				activePrivacyHoverRow = null;
+			}
+			function markPrivacyHoverRow(row) {
+				if (activePrivacyHoverRow === row) return;
+				clearPrivacyHoverRow();
+				activePrivacyHoverRow = row;
+				row.setAttribute('data-wa-privacy-hover', '1');
+				var revealTargets = row.querySelectorAll('span:not([data-wa-time]), ._ak8q, ._ak8k, img, image, [data-testid="default-user"], [data-icon="default-user"], [data-icon="default-group"]');
+				for (var i = 0; i < revealTargets.length; i++) revealTargets[i].setAttribute('data-wa-privacy-reveal', '1');
+			}
 			document.addEventListener('mouseover', function(e) {
+				if (!privacyChatListRootFromTarget(e.target)) return;
 				var row = privacyChatRowFromTarget(e.target);
-				if (row) row.setAttribute('data-wa-privacy-hover', '1');
+				if (row) markPrivacyHoverRow(row);
 			}, true);
 			document.addEventListener('mouseout', function(e) {
 				var row = privacyChatRowFromTarget(e.target);
 				if (row && (!e.relatedTarget || !row.contains(e.relatedTarget))) {
-					row.removeAttribute('data-wa-privacy-hover');
+					clearPrivacyHoverRow();
 				}
 			}, true);
 

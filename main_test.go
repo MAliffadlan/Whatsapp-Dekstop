@@ -226,7 +226,9 @@ func TestPrivacyModeUsesVisualBlurWithChatListHoverUnblur(t *testing.T) {
 		"filter: none !important",
 		"[data-testid=\"msg-container\"]:hover",
 		"data-wa-privacy-hover",
+		"data-wa-privacy-reveal",
 		"function privacyChatRowFromTarget(target)",
+		"function markPrivacyHoverRow(row)",
 	} {
 		if !strings.Contains(script, want) {
 			t.Errorf("privacy blur styling is missing %q", want)
