@@ -1455,17 +1455,11 @@ func getInitScript(ua string) string {
 			if (!toast) {
 				toast = document.createElement('div');
 				toast.id = 'wa-hud-toast';
-				toast.style.cssText = 'position:fixed;top:16px;left:50%;transform:translateX(-50%);background:rgba(32,44,51,0.94);backdrop-filter:blur(10px);color:#00a884;border:1px solid rgba(0,168,132,0.4);border-radius:20px;padding:8px 20px;font-size:12.5px;font-weight:600;z-index:2147483647;box-shadow:0 8px 24px rgba(0,0,0,0.6);transition:all 0.22s cubic-bezier(0.16,1,0.3,1);opacity:0;display:flex;align-items:center;gap:12px;max-width:90vw;';
+				toast.style.cssText = 'position:fixed;top:16px;left:50%;transform:translateX(-50%);background:rgba(32,44,51,0.94);backdrop-filter:blur(10px);color:#00a884;border:1px solid rgba(0,168,132,0.4);border-radius:20px;padding:8px 20px;font-size:12.5px;font-weight:600;z-index:9999999;box-shadow:0 8px 24px rgba(0,0,0,0.6);transition:all 0.22s cubic-bezier(0.16,1,0.3,1);opacity:0;display:flex;align-items:center;gap:12px;max-width:90vw;';
 				var parent = document.body || document.documentElement;
 				if (parent) parent.appendChild(toast);
 			}
 			if (!toast) return;
-			var currentParent = document.body || document.documentElement;
-			if (currentParent && toast.parentNode !== currentParent) {
-				currentParent.appendChild(toast);
-			} else if (currentParent && currentParent.lastElementChild !== toast) {
-				currentParent.appendChild(toast);
-			}
 			toast.textContent = '';
 			toast.style.pointerEvents = 'none';
 			var label = document.createElement('span');
@@ -1931,18 +1925,6 @@ func getInitScript(ua string) string {
 		// Auto-Start at Login Toggle (Cmd/Ctrl + Shift + S)
 		waRunModule('launch-on-boot', function() {
 			var isAutoStartState = false;
-			function refreshAutoStartState() {
-				if (window.getAutoStartNative) {
-					return Promise.resolve(window.getAutoStartNative()).then(function(val) {
-						isAutoStartState = !!val;
-						return isAutoStartState;
-					}).catch(function() { return isAutoStartState; });
-				}
-				return Promise.resolve(isAutoStartState);
-			}
-			window.refreshAutoStartState = refreshAutoStartState;
-			refreshAutoStartState();
-
 			window.toggleAutoStart = function() {
 				if (window.toggleAutoStartNative) {
 					return window.toggleAutoStartNative().then(function(isEnabled) {
@@ -3071,7 +3053,7 @@ func getInitScript(ua string) string {
 				fallback.setAttribute('aria-label', 'Open Settings and Controls');
 				fallback.title = 'Settings & Controls (' + (isMac ? 'Cmd' : 'Ctrl') + ' + ,)';
 				fallback.innerHTML = '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>';
-				fallback.style.cssText = 'position:fixed;left:14px;bottom:14px;z-index:9999998;width:38px;height:38px;padding:0;display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(134,150,160,.45);border-radius:50%;background:#111b21;color:#aebac1;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.3);';
+				fallback.style.cssText = 'position:fixed;left:14px;bottom:20px;z-index:9999998;width:38px;height:38px;padding:0;display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(134,150,160,.45);border-radius:50%;background:#111b21;color:#aebac1;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.3);';
 				fallback.setAttribute('data-header-settings-visible', headerVisible ? 'true' : 'false');
 				// Only visible when the header button is missing or unusable.
 				fallback.style.display = headerVisible ? 'none' : 'inline-flex';
@@ -3509,10 +3491,8 @@ func getInitScript(ua string) string {
 					}
 
 					window.syncModalTheme(isThemeDark);
-				updateBadges();
-				if (window.refreshAutoStartState) {
-					window.refreshAutoStartState().then(function() { updateBadges(); });
 				}
+				updateBadges();
 
 				// Hook Theme Segmented Control
 				document.getElementById('wa-theme-btn-dark').onclick = function() {
@@ -3804,10 +3784,10 @@ func getInitScript(ua string) string {
 				var btn = document.createElement('button');
 				btn.id = 'wa-emergency-settings-btn';
 				btn.type = 'button';
-				btn.setAttribute('aria-label', 'Open Settings and Controls');
-				btn.title = 'Settings & Controls (' + (isMac ? 'Cmd' : 'Ctrl') + ' + ,)';
-				btn.innerHTML = '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>';
-				btn.style.cssText = 'position:fixed;left:14px;bottom:14px;z-index:2147483646;width:38px;height:38px;padding:0;display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(134,150,160,.45);border-radius:50%;background:#111b21;color:#aebac1;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.3);';
+				btn.setAttribute('aria-label', 'Open Settings');
+				btn.title = 'Settings & Controls';
+				btn.textContent = '\u2699';
+				btn.style.cssText = 'position:fixed;left:14px;bottom:14px;z-index:2147483646;width:36px;height:36px;padding:0;display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(134,150,160,.45);border-radius:50%;background:#111b21;color:#aebac1;font-size:17px;line-height:1;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.3);';
 				btn.onclick = function(e) { e.preventDefault(); e.stopPropagation(); openSettings(); };
 				document.body.appendChild(btn);
 			}
@@ -3829,11 +3809,10 @@ func getInitScript(ua string) string {
 }
 
 type WindowState struct {
-	X         float64 `json:"x"`
-	Y         float64 `json:"y"`
-	Width     float64 `json:"width"`
-	Height    float64 `json:"height"`
-	Maximized bool    `json:"maximized,omitempty"`
+	X      float64 `json:"x"`
+	Y      float64 `json:"y"`
+	Width  float64 `json:"width"`
+	Height float64 `json:"height"`
 	// Screens maps a stable display identifier (macOS NSScreenNumber) to the
 	// frame the window had on that monitor. Only macOS populates it; other
 	// platforms round-trip it unchanged.
