@@ -136,6 +136,32 @@ All release notes, detailed change lists, and verification hashes are maintained
 
 ---
 
+## 🛠️ Building & Releasing
+
+Releases are built and published from a local machine, not from hosted CI. This
+keeps the release path independent of any runner account and makes every
+published artifact reproducible on the maintainer's machine.
+
+```bash
+bash release.sh --check          # verify the toolchain
+bash release.sh 1.5.9.6 --dry-run # build and checksum, publish nothing
+bash release.sh 1.5.9.6          # build, publish, and verify the download
+```
+
+`release.sh` refuses to publish unless `updater.go` already declares the same
+version, so a release can never advertise a version its binary does not report.
+It builds the macOS universal DMG/ZIP and the Windows portable EXE, ZIP, and
+Setup wizard, generates `SHA256SUMS` from the published asset list, and finally
+re-downloads an artifact to verify its digest.
+
+Individual targets are also available: `build_mac.sh`, `build_windows_installer.sh`,
+and `build_linux.sh` (Linux packaging is currently maintained separately).
+
+The `Release` workflow in `.github/workflows/build.yml` is manual-only for this
+reason; its job definitions are kept for use on a host with working runners.
+
+---
+
 ## License and disclaimer
 
 Licensed under the [MIT License](LICENSE).

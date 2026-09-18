@@ -1,9 +1,20 @@
 name: Release
 
+# MANUAL ONLY — do not re-add a tag trigger.
+#
+# This workflow used to run on every `v*` tag. Hosted runners require a healthy
+# account, and while the repository owner's account is locked for billing
+# reasons every tag push produced a failed run in four seconds (the `prepare`
+# job never started, so all build jobs were skipped and `publish` never ran).
+# Releases are therefore built and published from a local machine with
+# `bash release.sh <version>`, which produces the same artifacts and uploads
+# them with SHA256SUMS.
+#
+# The job definitions below are kept intact so the workflow can be run by hand
+# from the Actions tab (or with `gh workflow run`) whenever hosted runners are
+# available again. Re-adding the tag trigger without fixing the account would
+# only restore the failing runs.
 on:
-  push:
-    tags:
-      - "v*"
   workflow_dispatch:
     inputs:
       version:
