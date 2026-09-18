@@ -270,6 +270,26 @@ func TestSettingsHelpUsesLocalDiagnosticsAndDocumentsShortcuts(t *testing.T) {
 	}
 }
 
+func TestUpdateProgressKeepsStatusTextInSync(t *testing.T) {
+	script := getInitScript("test-agent")
+	start := strings.Index(script, "window.onUpdateProgress = function(pct)")
+	end := strings.Index(script[start:], "window.onUpdateStatus = function(statusMsg)")
+	if start < 0 || end < 0 {
+		t.Fatal("update progress handlers not found")
+	}
+	progress := script[start : start+end]
+	for _, want := range []string{
+		"wa-update-progress-bar",
+		"wa-update-progress-pct",
+		"wa-update-text",
+		"Downloading update package... ' + pct + '%'",
+	} {
+		if !strings.Contains(progress, want) {
+			t.Errorf("update progress handler is missing %q", want)
+		}
+	}
+}
+
 func TestThemeSwitchDoesNotOverrideNativeMediaQueriesOrLoseUserChoice(t *testing.T) {
 	script := getInitScript("test-agent")
 	start := strings.Index(script, "// Theme Manager")
@@ -749,4 +769,3 @@ func TestWindowStateMaximizedSerialization(t *testing.T) {
 		t.Errorf("expected parsed.Maximized to be true")
 	}
 }
-
