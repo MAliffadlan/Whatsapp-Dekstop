@@ -2240,8 +2240,10 @@ func getInitScript(ua string) string {
 			window.onUpdateProgress = function(pct) {
 				var bar = document.getElementById('wa-update-progress-bar');
 				var label = document.getElementById('wa-update-progress-pct');
+				var msg = document.getElementById('wa-update-text');
 				if (bar) bar.style.width = pct + '%';
 				if (label) label.textContent = pct + '%';
+				if (msg) msg.textContent = 'Downloading update package... ' + pct + '%';
 			};
 
 			window.onUpdateStatus = function(statusMsg) {
