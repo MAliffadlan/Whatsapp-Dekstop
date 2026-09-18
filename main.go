@@ -428,6 +428,10 @@ func getInitScript(ua string) string {
 		}, true);
 
 		window.closeDocumentViewerAfterNativePreview = function() {
+			// The native PDF window is already closed at this point. Only dismiss
+			// WhatsApp's own media viewer if it is still present; never send a
+			// global Escape because WhatsApp may interpret it as closing the chat.
+			var viewer = document.querySelector('[data-testid="media-viewer"]');
 			var selectors = [
 				'button[data-testid="x-viewer"]', '[data-testid="x-viewer"]',
 				'[data-icon="x-viewer"]', '[data-icon="x"]', '[data-icon="back"]',
@@ -435,7 +439,7 @@ func getInitScript(ua string) string {
 				'[role="button"][aria-label*="Close" i]', '[role="button"][aria-label*="Tutup" i]',
 				'button[title*="Close" i]', 'button[title*="Tutup" i]'
 			].join(',');
-			var candidates = document.querySelectorAll(selectors);
+			var candidates = viewer ? viewer.querySelectorAll(selectors) : [];
 			var best = null;
 			var bestScore = -1;
 			for (var i = 0; i < candidates.length; i++) {
@@ -456,13 +460,6 @@ func getInitScript(ua string) string {
 
 			if (best && bestScore >= 8) {
 				best.click();
-			} else {
-				var esc = new KeyboardEvent('keydown', {
-					key: 'Escape', code: 'Escape', keyCode: 27, which: 27,
-					bubbles: true, cancelable: true
-				});
-				document.dispatchEvent(esc);
-				window.dispatchEvent(esc);
 			}
 			lastDocumentIntentAt = 0;
 			lastClickedDocName = '';

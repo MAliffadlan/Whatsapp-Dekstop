@@ -423,6 +423,19 @@ func TestClosingNativePDFReturnsToChat(t *testing.T) {
 	if !strings.Contains(getInitScript("test-agent"), "window.closeDocumentViewerAfterNativePreview = function()") {
 		t.Fatal("webview has no command that returns from the document viewer to chat")
 	}
+	script := getInitScript("test-agent")
+	start := strings.Index(script, "window.closeDocumentViewerAfterNativePreview = function()")
+	end := strings.Index(script[start:], "// Handle explicit user clicks on WhatsApp Web's Media Viewer")
+	if start < 0 || end < 0 {
+		t.Fatal("native preview close handler boundaries not found")
+	}
+	handler := script[start : start+end]
+	if !strings.Contains(handler, "document.querySelector('[data-testid=\"media-viewer\"]')") {
+		t.Fatal("native preview close handler must scope dismissal to WhatsApp's media viewer")
+	}
+	if strings.Contains(handler, "document.dispatchEvent(esc)") || strings.Contains(handler, "window.dispatchEvent(esc)") {
+		t.Fatal("native preview close handler must not dispatch a global Escape")
+	}
 }
 
 func TestClosingNativePDFReleasesRenderedDocument(t *testing.T) {
@@ -749,4 +762,3 @@ func TestWindowStateMaximizedSerialization(t *testing.T) {
 		t.Errorf("expected parsed.Maximized to be true")
 	}
 }
-
