@@ -4,11 +4,12 @@ package main
 
 /*
 #cgo darwin CFLAGS: -x objective-c
-#cgo darwin LDFLAGS: -framework Cocoa -framework WebKit -framework PDFKit
+#cgo darwin LDFLAGS: -framework Cocoa -framework WebKit -framework PDFKit -framework UserNotifications
 
 #import <Cocoa/Cocoa.h>
 #import <WebKit/WebKit.h>
 #import <PDFKit/PDFKit.h>
+#import <UserNotifications/UserNotifications.h>
 #include <stdlib.h>
 
 // Declared early so the memory purge routine below can reach the live WKWebView
@@ -143,7 +144,7 @@ static void triggerNativeMemoryPurge(void) {
 }
 @end
 
-@interface WhatsAppAppDelegate : NSObject <NSApplicationDelegate, NSUserNotificationCenterDelegate>
+@interface WhatsAppAppDelegate : NSObject <NSApplicationDelegate, UNUserNotificationCenterDelegate>
 @property (assign) NSWindow *window;
 @end
 
@@ -156,32 +157,59 @@ static void triggerNativeMemoryPurge(void) {
     return YES;
 }
 
-- (BOOL)userNotificationCenter:(NSUserNotificationCenter *)center shouldPresentNotification:(NSUserNotification *)notification {
-    return YES;
+- (void)userNotificationCenter:(UNUserNotificationCenter *)center
+       willPresentNotification:(UNNotification *)notification
+         withCompletionHandler:(void (^)(UNNotificationPresentationOptions options))completionHandler {
+    completionHandler(UNNotificationPresentationOptionBanner | UNNotificationPresentationOptionSound);
 }
 
-- (void)userNotificationCenter:(NSUserNotificationCenter *)center didActivateNotification:(NSUserNotification *)notification {
+- (void)userNotificationCenter:(UNUserNotificationCenter *)center
+ didReceiveNotificationResponse:(UNNotificationResponse *)response
+          withCompletionHandler:(void (^)(void))completionHandler {
     if (self.window) {
         [self.window makeKeyAndOrderFront:nil];
         [NSApp activateIgnoringOtherApps:YES];
     }
+    completionHandler();
 }
 @end
 
+static BOOL nativeMacNotificationsAvailable(void) {
+    NSBundle *bundle = [NSBundle mainBundle];
+    // `go run .` executes from a temporary path instead of an app bundle.
+    // UserNotifications requires a real bundle identifier and otherwise
+    // raises an uncaught exception when currentNotificationCenter is queried.
+    return bundle.bundleURL != nil && bundle.bundleIdentifier.length > 0;
+}
+
 static void postNativeMacNotification(const char* titleStr, const char* bodyStr) {
     @autoreleasepool {
-        NSUserNotification *notification = [[NSUserNotification alloc] init];
+        if (!nativeMacNotificationsAvailable()) return;
+        UNMutableNotificationContent *content = [[UNMutableNotificationContent alloc] init];
         if (titleStr && strlen(titleStr) > 0) {
-            notification.title = [NSString stringWithUTF8String:titleStr];
+            content.title = [NSString stringWithUTF8String:titleStr];
         } else {
-            notification.title = @"WhatsApp Desk";
+            content.title = @"WhatsApp Desk";
         }
         if (bodyStr && strlen(bodyStr) > 0) {
-            notification.informativeText = [NSString stringWithUTF8String:bodyStr];
+            content.body = [NSString stringWithUTF8String:bodyStr];
         }
-        notification.soundName = NSUserNotificationDefaultSoundName;
-        [[NSUserNotificationCenter defaultUserNotificationCenter] deliverNotification:notification];
+        content.sound = [UNNotificationSound defaultSound];
+        UNNotificationRequest *request = [UNNotificationRequest requestWithIdentifier:[[NSUUID UUID] UUIDString]
+                                                                                content:content
+                                                                                trigger:nil];
+        [[UNUserNotificationCenter currentNotificationCenter] addNotificationRequest:request withCompletionHandler:nil];
     }
+}
+
+static void requestNativeMacNotificationAuthorization(void) {
+    if (!nativeMacNotificationsAvailable()) return;
+    [[UNUserNotificationCenter currentNotificationCenter]
+        requestAuthorizationWithOptions:(UNAuthorizationOptionAlert | UNAuthorizationOptionSound | UNAuthorizationOptionBadge)
+                      completionHandler:^(BOOL granted, NSError *error) {
+                          (void)granted;
+                          (void)error;
+                      }];
 }
 
 @interface WhatsAppUIDelegate : NSObject <WKUIDelegate>
@@ -293,8 +321,6 @@ static void configureWindowBehavior(void* nsWindowPtr) {
         [win setStyleMask:mask];
 
         [win setCollectionBehavior:(NSWindowCollectionBehaviorFullScreenPrimary | NSWindowCollectionBehaviorDefault)];
-        [win setShowsResizeIndicator:YES];
-
         // Minimum bounds: allow shrinking down dynamically to compact window
         [win setMinSize:NSMakeSize(450, 320)];
         [win setContentMinSize:NSMakeSize(450, 320)];
@@ -315,7 +341,11 @@ static void configureWindowBehavior(void* nsWindowPtr) {
         g_appDelegate = [[WhatsAppAppDelegate alloc] init];
         g_appDelegate.window = win;
         [NSApp setDelegate:g_appDelegate];
-        [[NSUserNotificationCenter defaultUserNotificationCenter] setDelegate:g_appDelegate];
+        if (nativeMacNotificationsAvailable()) {
+            UNUserNotificationCenter *notificationCenter = [UNUserNotificationCenter currentNotificationCenter];
+            notificationCenter.delegate = g_appDelegate;
+            requestNativeMacNotificationAuthorization();
+        }
     }
 }
 
