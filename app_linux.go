@@ -759,6 +759,8 @@ func runApp() {
 	_ = w.Bind("sendNativeNotification", func(title, body string) {
 		go showNativeNotification(title, body, iconPath)
 	})
+	_ = w.Bind("getNotificationsEnabledNative", getNotificationsEnabled)
+	_ = w.Bind("setNotificationsEnabledNative", setNotificationsEnabled)
 
 	_ = w.Bind("releaseMemoryNative", func() {
 		debug.FreeOSMemory()
