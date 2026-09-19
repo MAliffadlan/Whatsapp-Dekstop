@@ -1600,76 +1600,39 @@ func getInitScript(ua string) string {
 			styleEl.id = 'whatsapp-privacy-style';
 			// PRIVACY STRATEGY: text and previews use authentic visual blur
 			// (filter: blur(6px)), not opaque gray redaction blocks.
-			// Layout and timestamps (:not([data-wa-time])) remain preserved.
+			// Chat-list timestamps are private too and reveal with their row.
 			// Full set of chat list container selectors ensures instant auto-unblur
 			// on hover across all modern WhatsApp Web DOM structures.
 			styleEl.textContent = [
 				// Layer 1: names + previews in the chat list, hover row/item to peek.
-				// Spans tagged data-wa-time by the timestamp tagger below are
-				// always spared, so clock times stay readable.
+				// Chat-list timestamps are included in this blur layer.
 				// Covers #side generally (including Archived chats drawer & filtered views)
 				// as well as #pane-side and modern aria/data-testid containers.
-				'.privacy-mode #side [role="row"] span:not([data-wa-time]),',
-				'.privacy-mode #side [role="listitem"] span:not([data-wa-time]),',
-				'.privacy-mode #side [data-testid="cell-frame-container"] span:not([data-wa-time]),',
-				'.privacy-mode #side div[tabindex="-1"] span:not([data-wa-time]),',
-				'.privacy-mode #side div._ak8l span:not([data-wa-time]),',
+				'.privacy-mode #side [role="row"] span,',
+				'.privacy-mode #side [role="listitem"] span,',
+				'.privacy-mode #side [data-testid="cell-frame-container"] span,',
+				'.privacy-mode #side div[tabindex="-1"] span,',
+				'.privacy-mode #side div._ak8l span,',
 				'.privacy-mode #side ._ak8q,',
 				'.privacy-mode #side ._ak8k,',
-				'.privacy-mode #pane-side [role="row"] span:not([data-wa-time]),',
-				'.privacy-mode #pane-side [role="listitem"] span:not([data-wa-time]),',
-				'.privacy-mode #pane-side [data-testid="cell-frame-container"] span:not([data-wa-time]),',
-				'.privacy-mode #pane-side div[tabindex="-1"] span:not([data-wa-time]),',
+				'.privacy-mode #pane-side [role="row"] span,',
+				'.privacy-mode #pane-side [role="listitem"] span,',
+				'.privacy-mode #pane-side [data-testid="cell-frame-container"] span,',
+				'.privacy-mode #pane-side div[tabindex="-1"] span,',
 				'.privacy-mode #pane-side ._ak8q,',
 				'.privacy-mode #pane-side ._ak8k,',
-				'.privacy-mode [data-testid="chat-list"] [role="row"] span:not([data-wa-time]),',
-				'.privacy-mode [data-testid="chat-list"] [role="listitem"] span:not([data-wa-time]),',
-				'.privacy-mode [data-testid="chat-list"] [data-testid="cell-frame-container"] span:not([data-wa-time]),',
-				'.privacy-mode [data-testid="chat-list"] div[tabindex="-1"] span:not([data-wa-time]),',
-				'.privacy-mode div[aria-label="Chat list"] span:not([data-wa-time]),',
-				'.privacy-mode div[aria-label*="Archived" i] span:not([data-wa-time])',
+				'.privacy-mode [data-testid="chat-list"] [role="row"] span,',
+				'.privacy-mode [data-testid="chat-list"] [role="listitem"] span,',
+				'.privacy-mode [data-testid="chat-list"] [data-testid="cell-frame-container"] span,',
+				'.privacy-mode [data-testid="chat-list"] div[tabindex="-1"] span,',
+				'.privacy-mode div[aria-label="Chat list"] span,',
+				'.privacy-mode div[aria-label*="Archived" i] span',
 				'{ filter: blur(6px) !important; transition: filter 0.15s ease-out !important; }',
 				// Hovering any row or container restores its contents instantly.
-				'.privacy-mode #side [role="row"]:hover span,',
-				'.privacy-mode #side [role="listitem"]:hover span,',
-				'.privacy-mode #side [data-testid="cell-frame-container"]:hover span,',
-				'.privacy-mode #side div[tabindex="-1"]:hover span,',
-				'.privacy-mode #side div._ak8l:hover span,',
-				'.privacy-mode #side [role="row"]:hover ._ak8q,',
-				'.privacy-mode #side [role="listitem"]:hover ._ak8q,',
-				'.privacy-mode #side [data-testid="cell-frame-container"]:hover ._ak8q,',
-				'.privacy-mode #side div[tabindex="-1"]:hover ._ak8q,',
-				'.privacy-mode #side [role="row"]:hover ._ak8k,',
-				'.privacy-mode #side [role="listitem"]:hover ._ak8k,',
-				'.privacy-mode #side [data-testid="cell-frame-container"]:hover ._ak8k,',
-				'.privacy-mode #side div[tabindex="-1"]:hover ._ak8k,',
-				'.privacy-mode #pane-side [role="row"]:hover span,',
-				'.privacy-mode #pane-side [role="listitem"]:hover span,',
-				'.privacy-mode #pane-side [data-testid="cell-frame-container"]:hover span,',
-				'.privacy-mode #pane-side div[tabindex="-1"]:hover span,',
-				'.privacy-mode #pane-side div._ak8l:hover span,',
-				'.privacy-mode #pane-side [role="row"]:hover ._ak8q,',
-				'.privacy-mode #pane-side [role="listitem"]:hover ._ak8q,',
-				'.privacy-mode #pane-side [data-testid="cell-frame-container"]:hover ._ak8q,',
-				'.privacy-mode #pane-side div[tabindex="-1"]:hover ._ak8q,',
-				'.privacy-mode #pane-side [role="row"]:hover ._ak8k,',
-				'.privacy-mode #pane-side [role="listitem"]:hover ._ak8k,',
-				'.privacy-mode #pane-side [data-testid="cell-frame-container"]:hover ._ak8k,',
-				'.privacy-mode #pane-side div[tabindex="-1"]:hover ._ak8k,',
-				'.privacy-mode [data-testid="chat-list"] [role="row"]:hover span,',
-				'.privacy-mode [data-testid="chat-list"] [role="listitem"]:hover span,',
-				'.privacy-mode [data-testid="chat-list"] [data-testid="cell-frame-container"]:hover span,',
-				'.privacy-mode [data-testid="chat-list"] div[tabindex="-1"]:hover span,',
-				'.privacy-mode div[aria-label="Chat list"] [role="row"]:hover span,',
-				'.privacy-mode div[aria-label="Chat list"] [role="listitem"]:hover span,',
-				'.privacy-mode div[aria-label*="Archived" i] [role="row"]:hover span,',
-				'.privacy-mode div[aria-label*="Archived" i] [role="listitem"]:hover span,',
-				'.privacy-mode #side span:hover,',
-				'.privacy-mode #side ._ak8q:hover,',
-				'.privacy-mode #side ._ak8k:hover,',
-				'.privacy-mode #pane-side span:hover,',
-				'.privacy-mode #pane-side ._ak8q:hover,',
-				'.privacy-mode #pane-side ._ak8k:hover',
+				'.privacy-mode [data-wa-privacy-hover="1"] span,',
+				'.privacy-mode [data-wa-privacy-hover="1"] ._ak8q,',
+				'.privacy-mode [data-wa-privacy-hover="1"] ._ak8k,',
+				'.privacy-mode [data-wa-privacy-reveal="1"]',
 				'{ filter: none !important; }',
 				// Layer 2: everything textual inside a message bubble.
 				// Hovering the bubble restores the whole subtree.
@@ -1854,6 +1817,70 @@ func getInitScript(ua string) string {
 				'.wa-drag-over { outline: 3px solid #00a884; outline-offset: -3px; }',
 				'.wa-drag-over * { pointer-events: none; }'
 			].join('\n');
+
+			var activePrivacyHoverRow = null;
+			function privacyChatListRootFromTarget(target) {
+				var node = target && target.nodeType === 1 ? target : null;
+				while (node && node !== document.body) {
+					if (node.id === 'pane-side' || node.id === 'side' ||
+						node.getAttribute('data-testid') === 'chat-list' ||
+						node.getAttribute('aria-label') === 'Chat list') return node;
+					node = node.parentElement;
+				}
+				return null;
+			}
+			function privacyChatRowFromTarget(target) {
+				var listRoot = privacyChatListRootFromTarget(target);
+				var node = target && target.nodeType === 1 ? target : null;
+				while (node && node !== listRoot && node !== document.body) {
+					if (node.matches && (node.matches('[role="row"]') ||
+						node.matches('[role="listitem"]') ||
+						node.matches('[data-testid="cell-frame-container"]') ||
+						node.matches('div[tabindex="-1"]') ||
+						node.matches('div._ak8l'))) return node;
+					node = node.parentElement;
+				}
+				return null;
+			}
+			function clearPrivacyHoverRow() {
+				if (!activePrivacyHoverRow) return;
+				activePrivacyHoverRow.removeAttribute('data-wa-privacy-hover');
+				var revealed = activePrivacyHoverRow.querySelectorAll('[data-wa-privacy-reveal="1"]');
+				for (var i = 0; i < revealed.length; i++) {
+					revealed[i].removeAttribute('data-wa-privacy-reveal');
+					if (revealed[i].getAttribute('data-wa-privacy-filter-overridden') === '1') {
+						revealed[i].style.removeProperty('filter');
+						revealed[i].removeAttribute('data-wa-privacy-filter-overridden');
+					}
+				}
+				activePrivacyHoverRow = null;
+			}
+			function markPrivacyHoverRow(row) {
+				if (activePrivacyHoverRow === row) return;
+				clearPrivacyHoverRow();
+				activePrivacyHoverRow = row;
+				row.setAttribute('data-wa-privacy-hover', '1');
+				var revealTargets = row.querySelectorAll('span, ._ak8q, ._ak8k, img, image, [data-testid="default-user"], [data-icon="default-user"], [data-icon="default-group"]');
+				for (var i = 0; i < revealTargets.length; i++) {
+					revealTargets[i].setAttribute('data-wa-privacy-reveal', '1');
+					revealTargets[i].style.setProperty('filter', 'none', 'important');
+					revealTargets[i].setAttribute('data-wa-privacy-filter-overridden', '1');
+				}
+			}
+			function updatePrivacyHoverFromTarget(target) {
+				if (!privacyChatListRootFromTarget(target)) {
+					clearPrivacyHoverRow();
+					return;
+				}
+				var row = privacyChatRowFromTarget(target);
+				if (row) markPrivacyHoverRow(row);
+			}
+			document.addEventListener('mouseover', function(e) { updatePrivacyHoverFromTarget(e.target); }, true);
+			document.addEventListener('mousemove', function(e) { updatePrivacyHoverFromTarget(e.target); }, true);
+			document.addEventListener('mouseout', function(e) {
+				var row = privacyChatRowFromTarget(e.target);
+				if (row && (!e.relatedTarget || !row.contains(e.relatedTarget))) clearPrivacyHoverRow();
+			}, true);
 
 			function applyPrivacyMode(active, silent) {
 				isPrivacyActive = !!active;
@@ -3398,7 +3425,7 @@ func getInitScript(ua string) string {
 					'      <strong class="wa-text-primary" style="font-size:12.5px;">Privacy Mode</strong>' +
 					'      <span id="wa-badge-priv" style="font-size:10px;padding:1px 5px;border-radius:4px;font-weight:600;">...</span>' +
 					'    </div>' +
-					'    <div class="wa-text-muted" style="font-size:11px;">Hide names, previews & message text until you turn this off. Hover to peek; timestamps stay visible; reply box stays usable.</div>' +
+					'    <div class="wa-text-muted" style="font-size:11px;">Hide names, previews, timestamps & message text until you turn this off. Hover a chat to reveal its details; reply box stays usable.</div>' +
 					'  </div>' +
 					'  <div style="display:flex;align-items:center;justify-content:space-between;">' +
 					'    <span class="wa-text-muted" style="font-size:10px;font-family:monospace;">' + (isMac ? 'Cmd' : 'Ctrl') + '+Shift+P</span>' +

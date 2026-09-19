@@ -257,12 +257,14 @@ func TestPrivacyModeUsesVisualBlurWithChatListHoverUnblur(t *testing.T) {
 	for _, want := range []string{
 		"filter: blur(6px) !important",
 		"filter: none !important",
-		"#pane-side [role=\"row\"]:hover",
-		"#pane-side [role=\"listitem\"]:hover",
-		"#pane-side [data-testid=\"cell-frame-container\"]:hover",
-		"#pane-side div[tabindex=\"-1\"]:hover",
-		"#pane-side span:hover",
 		"[data-testid=\"msg-container\"]:hover",
+		"data-wa-privacy-hover",
+		"data-wa-privacy-reveal",
+		"function privacyChatRowFromTarget(target)",
+		"function markPrivacyHoverRow(row)",
+		"function updatePrivacyHoverFromTarget(target)",
+		"setProperty('filter', 'none', 'important')",
+		"div._ak8l",
 	} {
 		if !strings.Contains(script, want) {
 			t.Errorf("privacy blur styling is missing %q", want)
@@ -271,14 +273,36 @@ func TestPrivacyModeUsesVisualBlurWithChatListHoverUnblur(t *testing.T) {
 	if strings.Contains(script, "background: rgba(134,150,160") {
 		t.Fatal("privacy mode must use visual blur, not gray solid redaction boxes")
 	}
+	if strings.Contains(script, "#pane-side span:hover") {
+		t.Fatal("chat-list privacy reveal must remain scoped to the hovered chat container")
+	}
+	if strings.Contains(script, "#pane-side [role=\"row\"]:hover span") {
+		t.Fatal("chat-list privacy reveal must not depend on broad row hover selectors")
+	}
+	if !strings.Contains(script, "#pane-side [role=\"row\"] span,") {
+		t.Fatal("chat-list timestamps must be included in the privacy blur layer")
+	}
+	if !strings.Contains(script, "row.querySelectorAll('span, ._ak8q") {
+		t.Fatal("hover reveal must include timestamp spans")
+	}
+}
+
+func TestPrivacyModeCopyMatchesTimestampBlurBehavior(t *testing.T) {
+	script := getInitScript("test-agent")
+	if !strings.Contains(script, "Hide names, previews, timestamps & message text") {
+		t.Fatal("privacy mode copy must explain that timestamps are hidden")
+	}
+	if strings.Contains(script, "timestamps stay visible") {
+		t.Fatal("privacy mode copy must not claim timestamps stay visible")
+	}
 }
 
 func TestPrivacyModeCoversArchivedChatsAndAllAvatarVariants(t *testing.T) {
 	script := getInitScript("test-agent")
 	checks := []string{
 		// Sidebar & Archived chats text protection
-		"#side [role=\"row\"] span:not([data-wa-time])",
-		"#side [role=\"listitem\"] span:not([data-wa-time])",
+		"#side [role=\"row\"] span",
+		"#side [role=\"listitem\"] span",
 		"div[aria-label*=\"Archived\" i]",
 		// Avatar blur covers images, svg images, avatar container _ak8h, and default user SVGs
 		".privacy-mode.blur-avatars #side img",
