@@ -1,6 +1,6 @@
-# Contributing to WhatsApp Desktop
+# Contributing to WhatsApp Desk
 
-Thanks for your interest in contributing to WhatsApp Desktop!
+Thanks for your interest in contributing to WhatsApp Desk!
 
 ## Getting Started
 
@@ -115,6 +115,7 @@ Please include the following information:
 - [ ] UI changes include screenshots or recordings.
 - [ ] No secrets or personal data are included.
 - [ ] Documentation has been updated when necessary.
+- [ ] A `CHANGELOG.md` entry has been added under `Unreleased` for user-visible changes.
 - [ ] The pull request describes the problem and solution clearly.
 - [ ] The changes are focused and ready for review.
 
@@ -129,6 +130,39 @@ docs: update Linux setup instructions
 refactor: simplify message rendering
 test: add download handling tests
 ```
+
+## Changelog
+
+[CHANGELOG.md](CHANGELOG.md) is the single source of truth for what changed in each version.
+Release notes published on GitHub are generated from it, so the two can never disagree.
+
+When your change is user-visible, add an entry under `## [Unreleased]` in the appropriate section:
+
+| Section | Use it for |
+| --- | --- |
+| `Added` | New features |
+| `Changed` | Changes to existing behavior |
+| `Deprecated` | Features still present but discouraged |
+| `Removed` | Features that were taken out |
+| `Fixed` | Bug fixes |
+| `Security` | Vulnerabilities and hardening |
+
+Keep entries short, written in the imperative mood, and focused on what the user observes. Reference
+the pull request or issue number when there is one.
+
+```markdown
+## [Unreleased]
+
+### Fixed
+
+- Documents keep their original filename when saved from the context menu (#27).
+```
+
+Maintainers move the `Unreleased` entries into a new `## [x.y.z] - YYYY-MM-DD` section when cutting a
+release. `release.sh` refuses to publish if no section exists for the version being released, so a
+release can never ship with placeholder notes.
+
+Do not edit sections for versions that have already been released — that history is immutable.
 
 ## Bug Reports
 
@@ -175,4 +209,4 @@ By contributing to this project, you agree that your contributions will be licen
 
 ## Thank You
 
-Thank you for helping improve WhatsApp Desktop!
+Thank you for helping improve WhatsApp Desk!

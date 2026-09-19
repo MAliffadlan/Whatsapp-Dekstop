@@ -130,9 +130,11 @@ Default profile locations:
 
 ## 📜 Release Notes & Changelog
 
-All release notes, detailed change lists, and verification hashes are maintained on GitHub:
+Every version's changes are recorded in **[CHANGELOG.md](CHANGELOG.md)**, which follows the
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format. The published release notes are
+generated from it, so the two can never disagree.
 
-👉 **[View All Releases & Changelogs on GitHub](https://github.com/vianziro/Whatsapp-Dekstop/releases)**
+👉 **[Read the Changelog](CHANGELOG.md)** · **[View All Releases on GitHub](https://github.com/vianziro/Whatsapp-Dekstop/releases)**
 
 ---
 
