@@ -771,6 +771,23 @@ func TestMediaViewerCloseButtonNotIntercepted(t *testing.T) {
 	}
 }
 
+func TestEscapeChatPreservesFullscreen(t *testing.T) {
+	script := getInitScript("test-agent")
+	for _, want := range []string{
+		"waRunModule('escape-chat'",
+		"if (__WA_GOOS !== 'darwin') return;",
+		"nativeOverlayOpen()",
+		"activeChatHeader()",
+		"button[data-testid=\"back\"]",
+		"e.preventDefault()",
+		"e.stopImmediatePropagation()",
+	} {
+		if !strings.Contains(script, want) {
+			t.Errorf("Escape chat safeguard is missing %q", want)
+		}
+	}
+}
+
 func TestDragAndDropUploadStabilization(t *testing.T) {
 	script := getInitScript("test-agent")
 
