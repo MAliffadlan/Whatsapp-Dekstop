@@ -2656,6 +2656,11 @@ func getInitScript(ua string) string {
 		// Automatic Download & Document Preview Interceptor for Chat Files & Media
 		waRunModule('document-viewer', function() {
 			var activeDownloadKeys = Object.create(null);
+			// Paths the saver has already reported in this session. The Go saver
+			// returns the path of an existing byte-identical file instead of
+			// writing a second copy, so seeing the same path a second time means
+			// the content was already on disk and the toast should say so.
+			var savedDownloadPaths = Object.create(null);
 
 			function downloadRequestKey(href, filename) {
 				return String(filename || '') + '\n' + String(href || '');
@@ -2729,13 +2734,15 @@ func getInitScript(ua string) string {
 							if (window.saveDownloadedFileNative) {
 								window.saveDownloadedFileNative(filename, base64data).then(function(savedPath) {
 									if (savedPath) {
+										var alreadySaved = savedDownloadPaths[savedPath] === true;
+										savedDownloadPaths[savedPath] = true;
 										markDownloadComplete(requestKey, savedPath);
 										if (shouldAutoOpen) {
 											showInAppDocModal(filename, ownedBlobUrl || href, savedPath, base64data, ownedBlobUrl);
 											if (window.dismissStuckViewer) window.dismissStuckViewer();
-											showFloatingToast('📄 Preview opened: ' + filename, openFolderAction());
+											showFloatingToast(alreadySaved ? ('📄 Already saved: ' + filename) : ('📄 Preview opened: ' + filename), openFolderAction());
 										} else {
-											showFloatingToast('💾 Saved successfully: ' + filename, openFolderAction());
+											showFloatingToast(alreadySaved ? ('💾 File already saved: ' + filename) : ('💾 Saved successfully: ' + filename), openFolderAction());
 										}
 									} else {
 										if (ownedBlobUrl) URL.revokeObjectURL(ownedBlobUrl);

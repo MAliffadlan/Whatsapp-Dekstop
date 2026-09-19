@@ -83,6 +83,22 @@ func TestExistingDownloadsAreDeduplicatedByContent(t *testing.T) {
 	}
 }
 
+func TestDuplicateDownloadToastReportsAlreadySaved(t *testing.T) {
+	script := getInitScript("test-agent")
+	for _, want := range []string{
+		"var savedDownloadPaths = Object.create(null)",
+		"var alreadySaved = savedDownloadPaths[savedPath] === true",
+		"savedDownloadPaths[savedPath] = true",
+		"'💾 File already saved: ' + filename",
+		"'📄 Already saved: ' + filename",
+		"'💾 Saved successfully: ' + filename",
+	} {
+		if !strings.Contains(script, want) {
+			t.Errorf("duplicate download feedback is missing %q", want)
+		}
+	}
+}
+
 func TestFilePickerUploadsDoNotTriggerDocumentPreview(t *testing.T) {
 	script := getInitScript("test-agent")
 	for _, want := range []string{
