@@ -59,9 +59,8 @@ func TestDownloadInterceptorCoalescesDuplicateRequests(t *testing.T) {
 	for _, want := range []string{
 		"var activeDownloadKeys = Object.create(null)",
 		"function downloadRequestKey(href, filename)",
-		"var activeDownloadSizes = {}",
 		"activeDownloadKeys[requestKey] = { status: 'downloading' }",
-		"markDownloadComplete(requestKey, savedPath, blob.size)",
+		"markDownloadComplete(requestKey, savedPath)",
 		"releaseDownloadRequest(requestKey)",
 	} {
 		if !strings.Contains(script, want) {
