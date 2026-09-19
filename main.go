@@ -2661,11 +2661,6 @@ func getInitScript(ua string) string {
 				return String(filename || '') + '\n' + String(href || '');
 			}
 
-			// Same file arrives through different blob URLs depending on which
-			// path triggered it (bubble click, viewer download button, anchor
-			// intercept), so dedup by content length instead of the URL.
-			var activeDownloadSizes = {};
-
 			function releaseDownloadRequest(requestKey, immediately) {
 				delete activeDownloadKeys[requestKey];
 			}
@@ -2679,10 +2674,9 @@ func getInitScript(ua string) string {
 				};
 			}
 
-			function markDownloadComplete(requestKey, savedPath, blobSize) {
+			function markDownloadComplete(requestKey, savedPath) {
 				var completedRequest = { status: 'complete', savedPath: savedPath };
 				activeDownloadKeys[requestKey] = completedRequest;
-				if (blobSize) activeDownloadSizes[blobSize] = savedPath;
 				// Tell the badge layer this filename is now on disk so the next
 				// scan badges it without a redundant native stat.
 				var savedBase = (savedPath || '').split(/[\\/]/).pop();
@@ -2735,7 +2729,7 @@ func getInitScript(ua string) string {
 							if (window.saveDownloadedFileNative) {
 								window.saveDownloadedFileNative(filename, base64data).then(function(savedPath) {
 									if (savedPath) {
-										markDownloadComplete(requestKey, savedPath, blob.size);
+										markDownloadComplete(requestKey, savedPath);
 										if (shouldAutoOpen) {
 											showInAppDocModal(filename, ownedBlobUrl || href, savedPath, base64data, ownedBlobUrl);
 											if (window.dismissStuckViewer) window.dismissStuckViewer();
