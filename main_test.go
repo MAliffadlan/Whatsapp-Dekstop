@@ -286,6 +286,23 @@ func TestSettingsControlsRemainWired(t *testing.T) {
 	}
 }
 
+func TestSettingsShortcutActionsKeepConsistentSpacing(t *testing.T) {
+	script := getInitScript("test-agent")
+	for _, shortcut := range []string{"+Shift+P", "+Shift+T", "+Shift+M", "+Shift+S"} {
+		idx := strings.Index(script, shortcut)
+		if idx < 0 {
+			t.Fatalf("settings shortcut %q not found", shortcut)
+		}
+		window := script[idx-500 : idx+500]
+		if !strings.Contains(window, "gap:12px;min-width:150px;flex-shrink:0") {
+			t.Errorf("shortcut %q is missing the spaced action layout", shortcut)
+		}
+		if !strings.Contains(window, "min-width:78px") {
+			t.Errorf("shortcut %q action button is missing a consistent minimum width", shortcut)
+		}
+	}
+}
+
 func TestSettingsAlwaysHasAnAccessibleEntryPoint(t *testing.T) {
 	script := getInitScript("test-agent")
 	start := strings.Index(script, "function injectHeaderToolbarBtn()")

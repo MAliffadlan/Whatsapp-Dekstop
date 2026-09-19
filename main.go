@@ -3521,7 +3521,7 @@ func getInitScript(ua string) string {
 					'  </div>' +
 					'  <div class="wa-text-muted" style="font-size:11px;">Allow or block system notifications on macOS, Linux, and Windows.</div>' +
 					'</div>' +
-					'<button id="wa-action-toggle-notifications" class="wa-card-btn" style="padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border-width:1px;border-style:solid;">Disable</button>';
+					'<button id="wa-action-toggle-notifications" class="wa-card-btn" style="flex-shrink:0;min-width:78px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border-width:1px;border-style:solid;">Disable</button>';
 				quickGrid.appendChild(cardNotifications);
 
 				// Card 1: Privacy Mode
@@ -3530,16 +3530,16 @@ func getInitScript(ua string) string {
 				cardPrivacy.style.cssText = 'border-radius:0;border-width:0 0 1px;border-style:solid;padding:12px 0;display:flex;flex-direction:column;gap:8px;';
 				cardPrivacy.innerHTML = '' +
 					'<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;">' +
-					'  <div>' +
+					'  <div style="flex:1;min-width:0;">' +
 					'    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">' +
 					'      <strong class="wa-text-primary" style="font-size:12.5px;">Privacy Mode</strong>' +
 					'      <span id="wa-badge-priv" style="font-size:10px;padding:1px 5px;border-radius:4px;font-weight:600;">...</span>' +
 					'    </div>' +
 					'    <div class="wa-text-muted" style="font-size:11px;">Hide names, previews, timestamps & message text until you turn this off. Hover a chat to reveal its details; reply box stays usable.</div>' +
 					'  </div>' +
-					'  <div style="display:flex;align-items:center;justify-content:space-between;">' +
+					'  <div style="display:flex;align-items:center;justify-content:flex-end;gap:12px;min-width:150px;flex-shrink:0;">' +
 					'    <span class="wa-text-muted" style="font-size:10px;font-family:monospace;">' + (isMac ? 'Cmd' : 'Ctrl') + '+Shift+P</span>' +
-					'    <button id="wa-action-toggle-priv" class="wa-card-btn" style="padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border-width:1px;border-style:solid;">Toggle</button>' +
+					'    <button id="wa-action-toggle-priv" class="wa-card-btn" style="min-width:78px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border-width:1px;border-style:solid;">Toggle</button>' +
 					'  </div>' +
 					'</div>' +
 					'<label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;">' +
@@ -3557,16 +3557,16 @@ func getInitScript(ua string) string {
 				cardPin.className = 'wa-modal-card';
 				cardPin.style.cssText = 'border-radius:0;border-width:0 0 1px;border-style:solid;padding:12px 0;display:flex;align-items:center;justify-content:space-between;gap:16px;';
 				cardPin.innerHTML = '' +
-					'<div>' +
+					'<div style="flex:1;min-width:0;">' +
 					'  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">' +
 					'    <strong class="wa-text-primary" style="font-size:12.5px;">Always on Top</strong>' +
 					'    <span id="wa-badge-pin" style="font-size:10px;padding:1px 5px;border-radius:4px;font-weight:600;">...</span>' +
 					'  </div>' +
 					'  <div class="wa-text-muted" style="font-size:11px;">Keep window floating above other applications.</div>' +
 					'</div>' +
-					'<div style="display:flex;align-items:center;justify-content:space-between;">' +
+					'<div style="display:flex;align-items:center;justify-content:flex-end;gap:12px;min-width:150px;flex-shrink:0;">' +
 					'  <span class="wa-text-muted" style="font-size:10px;font-family:monospace;">' + (isMac ? 'Cmd' : 'Ctrl') + '+Shift+T</span>' +
-					'  <button id="wa-action-toggle-pin" class="wa-card-btn" style="padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border-width:1px;border-style:solid;">Toggle</button>' +
+					'  <button id="wa-action-toggle-pin" class="wa-card-btn" style="min-width:78px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border-width:1px;border-style:solid;">Toggle</button>' +
 					'</div>';
 				quickGrid.appendChild(cardPin);
 
@@ -3575,16 +3575,16 @@ func getInitScript(ua string) string {
 				cardMute.className = 'wa-modal-card';
 				cardMute.style.cssText = 'border-radius:0;border-width:0 0 1px;border-style:solid;padding:12px 0;display:flex;align-items:center;justify-content:space-between;gap:16px;';
 				cardMute.innerHTML = '' +
-					'<div>' +
+					'<div style="flex:1;min-width:0;">' +
 					'  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">' +
 					'    <strong class="wa-text-primary" style="font-size:12.5px;">Notification Audio</strong>' +
 					'    <span id="wa-badge-mute" style="font-size:10px;padding:1px 5px;border-radius:4px;font-weight:600;">...</span>' +
 					'  </div>' +
 					'  <div class="wa-text-muted" style="font-size:11px;">Mute all notification sounds and media audio.</div>' +
 					'</div>' +
-					'<div style="display:flex;align-items:center;justify-content:space-between;">' +
+					'<div style="display:flex;align-items:center;justify-content:flex-end;gap:12px;min-width:150px;flex-shrink:0;">' +
 					'  <span class="wa-text-muted" style="font-size:10px;font-family:monospace;">' + (isMac ? 'Cmd' : 'Ctrl') + '+Shift+M</span>' +
-					'  <button id="wa-action-toggle-mute" class="wa-card-btn" style="padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border-width:1px;border-style:solid;">Toggle</button>' +
+					'  <button id="wa-action-toggle-mute" class="wa-card-btn" style="min-width:78px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border-width:1px;border-style:solid;">Toggle</button>' +
 					'</div>';
 				quickGrid.appendChild(cardMute);
 
@@ -3593,16 +3593,16 @@ func getInitScript(ua string) string {
 				cardAuto.className = 'wa-modal-card';
 				cardAuto.style.cssText = 'border-radius:0;border-width:0 0 1px;border-style:solid;padding:12px 0;display:flex;align-items:center;justify-content:space-between;gap:16px;';
 				cardAuto.innerHTML = '' +
-					'<div>' +
+					'<div style="flex:1;min-width:0;">' +
 					'  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">' +
 					'    <strong class="wa-text-primary" style="font-size:12.5px;">Launch at Startup</strong>' +
 					'    <span id="wa-badge-auto" style="font-size:10px;padding:1px 5px;border-radius:4px;font-weight:600;">...</span>' +
 					'  </div>' +
 					'  <div class="wa-text-muted" style="font-size:11px;">Automatically start WhatsApp Desk on system login.</div>' +
 					'</div>' +
-					'<div style="display:flex;align-items:center;justify-content:space-between;">' +
+					'<div style="display:flex;align-items:center;justify-content:flex-end;gap:12px;min-width:150px;flex-shrink:0;">' +
 					'  <span class="wa-text-muted" style="font-size:10px;font-family:monospace;">' + (isMac ? 'Cmd' : 'Ctrl') + '+Shift+S</span>' +
-					'  <button id="wa-action-toggle-auto" class="wa-card-btn" style="padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border-width:1px;border-style:solid;">Toggle</button>' +
+					'  <button id="wa-action-toggle-auto" class="wa-card-btn" style="min-width:78px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border-width:1px;border-style:solid;">Toggle</button>' +
 					'</div>';
 				quickGrid.appendChild(cardAuto);
 
