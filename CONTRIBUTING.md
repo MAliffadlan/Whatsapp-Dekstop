@@ -8,7 +8,7 @@ Thanks for your interest in contributing to WhatsApp Desktop!
 2. Clone your fork:
 
    ```bash
-   git clone https://github.com/YOUR_USERNAME/Whatsapp-Desktop.git
+   git clone https://github.com/YOUR_USERNAME/Whatsapp-Dekstop.git
    cd Whatsapp-Dekstop
    ```
 
