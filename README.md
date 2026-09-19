@@ -144,8 +144,8 @@ published artifact reproducible on the maintainer's machine.
 
 ```bash
 bash release.sh --check          # verify the toolchain
-bash release.sh 1.5.9.6 --dry-run # build and checksum, publish nothing
-bash release.sh 1.5.9.6          # build, publish, and verify the download
+bash release.sh 1.5.9.7 --dry-run # build and checksum, publish nothing
+bash release.sh 1.5.9.7          # build, publish, and verify the download
 ```
 
 `release.sh` refuses to publish unless `updater.go` already declares the same
