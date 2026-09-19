@@ -1,8 +1,8 @@
 #!/bin/bash
 # Builds and publishes a release from this machine — no hosted CI required.
 #
-#   bash release.sh 1.5.9.6            build, checksum, publish
-#   bash release.sh 1.5.9.6 --dry-run  build and checksum only, publish nothing
+#   bash release.sh 1.5.9.7            build, checksum, publish
+#   bash release.sh 1.5.9.7 --dry-run  build and checksum only, publish nothing
 #   bash release.sh --check            verify toolchain and report what is missing
 #
 # What it does, in order:
@@ -77,14 +77,14 @@ if [ -n "${CHECK_ONLY:-}" ]; then
 fi
 
 [ -n "$VERSION" ] || die "usage: bash release.sh <version> [--dry-run]
-example: bash release.sh 1.5.9.6"
+example: bash release.sh 1.5.9.7"
 
 # --------------------------------------------------------------------------
 # 1. Validate the version
 # --------------------------------------------------------------------------
 step "Validating version $VERSION"
 
-[[ "$VERSION" =~ ^[0-9]+(\.[0-9]+){2,3}$ ]] || die "version must look like 1.5.9 or 1.5.9.6, got '$VERSION'"
+[[ "$VERSION" =~ ^[0-9]+(\.[0-9]+){2,3}$ ]] || die "version must look like 1.5.9 or 1.5.9.7, got '$VERSION'"
 
 grep -Fq "var appVersion = \"${VERSION}\"" updater.go \
   || die "updater.go must declare: var appVersion = \"${VERSION}\"
