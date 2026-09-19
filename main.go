@@ -2250,6 +2250,8 @@ func getInitScript(ua string) string {
 					}
 					actionsDiv.style.display = 'none';
 					progressWrap.style.display = 'flex';
+					btnUpdate.textContent = 'Updating...';
+					msg.style.color = '#d1d7db';
 					msg.textContent = 'Downloading update package...';
 					if (window.startUpdateNative) {
 						window.startUpdateNative(downloadUrl);
@@ -2282,9 +2284,14 @@ func getInitScript(ua string) string {
 				var actions = document.getElementById('wa-update-actions');
 				var prog = document.getElementById('wa-update-progress-wrap');
 				var msg = document.getElementById('wa-update-text');
+				var retry = document.getElementById('wa-btn-update');
 				if (actions) actions.style.display = 'flex';
 				if (prog) prog.style.display = 'none';
-				if (msg) msg.textContent = 'Update available';
+				if (retry) retry.textContent = 'Retry';
+				if (msg) {
+					msg.textContent = 'Update failed: ' + (errMsg || 'Unknown error');
+					msg.style.color = '#ff8a80';
+				}
 				showFloatingToast('❌ Failed to update: ' + errMsg);
 			};
 

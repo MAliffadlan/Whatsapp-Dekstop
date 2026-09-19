@@ -377,6 +377,26 @@ func TestUpdateProgressKeepsStatusTextInSync(t *testing.T) {
 	}
 }
 
+func TestUpdaterErrorKeepsClearMessageAndRetryAction(t *testing.T) {
+	script := getInitScript("test-agent")
+	start := strings.Index(script, "window.onUpdateError = function(errMsg)")
+	end := strings.Index(script[start:], "// Manual Check Function")
+	if start < 0 || end < 0 {
+		t.Fatal("updater error handler not found")
+	}
+	errorHandler := script[start : start+end]
+	for _, want := range []string{
+		"Update failed: ",
+		"retry.textContent = 'Retry'",
+		"actions.style.display = 'flex'",
+		"prog.style.display = 'none'",
+	} {
+		if !strings.Contains(errorHandler, want) {
+			t.Errorf("updater recovery handler is missing %q", want)
+		}
+	}
+}
+
 func TestThemeSwitchDoesNotOverrideNativeMediaQueriesOrLoseUserChoice(t *testing.T) {
 	script := getInitScript("test-agent")
 	start := strings.Index(script, "// Theme Manager")
