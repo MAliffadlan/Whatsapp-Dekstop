@@ -3067,6 +3067,7 @@ func getInitScript(ua string) string {
 			var themeReloadTimer = null;
 			var themeReapplyTimers = [];
 			var themeStyle = null;
+			var mediaPermissionCard = null;
 			// Keep the engine's native MediaQueryList intact. Replacing matchMedia with
 			// a partial object breaks framework listeners on some WebView2/WebKitGTK
 			// versions and was the main cross-platform difference in theme switching.
@@ -3454,6 +3455,25 @@ func getInitScript(ua string) string {
 				var quickGrid = document.createElement('div');
 				quickGrid.style.cssText = 'display:flex;flex-direction:column;';
 
+				if (isMac && window.getCameraPermissionNative && window.getMicrophonePermissionNative) {
+					mediaPermissionCard = document.createElement('div');
+					mediaPermissionCard.className = 'wa-modal-card';
+					mediaPermissionCard.style.cssText = 'border-radius:0;border-width:0 0 1px;border-style:solid;padding:12px 0;display:flex;flex-direction:column;gap:8px;';
+					mediaPermissionCard.innerHTML = '' +
+						'<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;">' +
+						'  <div>' +
+						'    <strong class="wa-text-primary" style="font-size:12.5px;display:block;">Camera & Microphone</strong>' +
+						'    <span id="wa-media-permission-summary" class="wa-text-muted" style="font-size:11px;display:block;margin-top:2px;">Checking macOS permissions...</span>' +
+						'  </div>' +
+						'  <div style="display:flex;gap:6px;flex-shrink:0;">' +
+						'    <button id="wa-media-permission-settings" class="wa-card-btn" style="padding:4px 8px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border-width:1px;border-style:solid;">System Settings</button>' +
+						'    <button id="wa-media-permission-retry" class="wa-card-btn" style="padding:4px 8px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border-width:1px;border-style:solid;">Retry</button>' +
+						'  </div>' +
+						'</div>' +
+						'<div id="wa-media-permission-details" class="wa-text-muted" style="font-size:10.5px;line-height:1.45;"></div>';
+					quickGrid.appendChild(mediaPermissionCard);
+				}
+
 				// Card 1: Privacy Mode
 				var cardPrivacy = document.createElement('div');
 				cardPrivacy.className = 'wa-modal-card';
@@ -3755,6 +3775,49 @@ func getInitScript(ua string) string {
 					}
 
 					window.syncModalTheme(isThemeDark);
+				}
+
+				function mediaPermissionText(status) {
+					if (status === 'authorized') return 'Allowed';
+					if (status === 'denied') return 'Blocked';
+					if (status === 'restricted') return 'Restricted';
+					return 'Not requested';
+				}
+
+				function refreshMediaPermissions() {
+					if (!mediaPermissionCard) return Promise.resolve();
+					var summary = document.getElementById('wa-media-permission-summary');
+					var details = document.getElementById('wa-media-permission-details');
+					return Promise.all([
+						Promise.resolve(window.getCameraPermissionNative()).catch(function() { return 'unknown'; }),
+						Promise.resolve(window.getMicrophonePermissionNative()).catch(function() { return 'unknown'; })
+					]).then(function(statuses) {
+						var camera = statuses[0];
+						var microphone = statuses[1];
+						var blocked = camera === 'denied' || camera === 'restricted' || microphone === 'denied' || microphone === 'restricted';
+						if (summary) summary.textContent = 'Camera: ' + mediaPermissionText(camera) + ' · Microphone: ' + mediaPermissionText(microphone);
+						if (details) details.textContent = blocked ?
+							'Permission is blocked by macOS. Open System Settings → Privacy & Security → Camera/Microphone, enable WhatsApp Desk, then click Retry.' :
+							'WhatsApp Desk needs these permissions for calls and voice messages. If macOS asks, allow access and click Retry.';
+					});
+				}
+
+				if (mediaPermissionCard) {
+					document.getElementById('wa-media-permission-settings').onclick = function() {
+						if (window.openMediaPrivacySettingsNative) window.openMediaPrivacySettingsNative('camera');
+					};
+					document.getElementById('wa-media-permission-retry').onclick = function() {
+						var retry = document.getElementById('wa-media-permission-retry');
+						if (retry) { retry.disabled = true; retry.textContent = 'Checking...'; }
+						var request = navigator.mediaDevices && navigator.mediaDevices.getUserMedia ?
+							navigator.mediaDevices.getUserMedia({ audio: true, video: true }).then(function(stream) {
+								stream.getTracks().forEach(function(track) { track.stop(); });
+							}).catch(function() {}) : Promise.resolve();
+						request.then(refreshMediaPermissions).then(function() {
+							if (retry) { retry.disabled = false; retry.textContent = 'Retry'; }
+						});
+					};
+					refreshMediaPermissions();
 				}
 				updateBadges();
 				if (window.refreshAutoStartState) {

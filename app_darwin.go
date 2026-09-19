@@ -4,18 +4,45 @@ package main
 
 /*
 #cgo darwin CFLAGS: -x objective-c
-#cgo darwin LDFLAGS: -framework Cocoa -framework WebKit -framework PDFKit -framework UserNotifications
+<<<<<<< HEAD
+#cgo darwin LDFLAGS: -framework Cocoa -framework WebKit -framework PDFKit -framework UserNotifications -framework AVFoundation
 
 #import <Cocoa/Cocoa.h>
 #import <WebKit/WebKit.h>
 #import <PDFKit/PDFKit.h>
 #import <UserNotifications/UserNotifications.h>
+#import <AVFoundation/AVFoundation.h>
 #include <stdlib.h>
 
 // Declared early so the memory purge routine below can reach the live WKWebView
 // instance (and its real, already-attached website data store) instead of only
 // posting a notification that WebKit does not actually observe.
 static WKWebView* g_mainWebView = nil;
+
+static const char* mediaPermissionStatus(AVMediaType type) {
+    switch ([AVCaptureDevice authorizationStatusForMediaType:type]) {
+        case AVAuthorizationStatusAuthorized: return "authorized";
+        case AVAuthorizationStatusDenied: return "denied";
+        case AVAuthorizationStatusRestricted: return "restricted";
+        default: return "not-determined";
+    }
+}
+
+static const char* cameraPermissionStatus(void) {
+    return mediaPermissionStatus(AVMediaTypeVideo);
+}
+
+static const char* microphonePermissionStatus(void) {
+    return mediaPermissionStatus(AVMediaTypeAudio);
+}
+
+static int openMediaPrivacySettings(const char* kind) {
+    NSString* section = (kind && strcmp(kind, "microphone") == 0) ?
+        @"Privacy_Microphone" : @"Privacy_Camera";
+    NSString* raw = [NSString stringWithFormat:
+        @"x-apple.systempreferences:com.apple.preference.security?%@", section];
+    return [[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:raw]] ? 1 : 0;
+}
 
 static void configureWebKitMemoryLimits(void) {
     static dispatch_once_t onceToken;
@@ -1248,6 +1275,18 @@ func runApp() {
 		go func() {
 			_ = executeUpdate(w, downloadURL)
 		}()
+	})
+
+	_ = w.Bind("getCameraPermissionNative", func() string {
+		return C.GoString(C.cameraPermissionStatus())
+	})
+	_ = w.Bind("getMicrophonePermissionNative", func() string {
+		return C.GoString(C.microphonePermissionStatus())
+	})
+	_ = w.Bind("openMediaPrivacySettingsNative", func(kind string) bool {
+		cKind := C.CString(kind)
+		defer C.free(unsafe.Pointer(cKind))
+		return C.openMediaPrivacySettings(cKind) != 0
 	})
 
 	// 13. Bind download, preview, and settings handlers
