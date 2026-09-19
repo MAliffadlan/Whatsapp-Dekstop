@@ -104,6 +104,20 @@ func TestExplicitDocumentDownloadsDoNotAutoOpenPreview(t *testing.T) {
 	}
 }
 
+func TestSavedBadgeFollowsFilenameElement(t *testing.T) {
+	script := getInitScript("test-agent")
+	for _, want := range []string{
+		"function findFileNameElement(el)",
+		"function decorateItem(el, name, filenameEl)",
+		"var host = filenameEl || el.querySelector",
+		"if (name) decorateItem(row, name, findFileNameElement(row))",
+	} {
+		if !strings.Contains(script, want) {
+			t.Errorf("saved badge alignment is missing %q", want)
+		}
+	}
+}
+
 func TestOfficeDocumentPreviewSupport(t *testing.T) {
 	script := getInitScript("test-agent")
 
