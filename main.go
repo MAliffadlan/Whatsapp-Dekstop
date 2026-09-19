@@ -322,6 +322,49 @@ func getInitScript(ua string) string {
 				   ext.endsWith('.rtf');
 		}
 
+		function cleanDownloadFilename(name) {
+			if (!name) return '';
+			try {
+				var clean = String(name).split(/[\\/]/).pop().trim();
+				clean = clean.replace(/[\u0000-\u001f]/g, '');
+				return clean;
+			} catch (e) {
+				return '';
+			}
+		}
+
+		function isPlaceholderDownloadFilename(name) {
+			var clean = cleanDownloadFilename(name).toLowerCase();
+			if (!clean) return true;
+			var stem = clean.replace(/\.[^.]+$/, '').replace(/\s*\(\d+\)$/, '').trim();
+			return ['document', 'download', 'file', 'attachment', 'whatsapp_file', 'whatsapp_media'].indexOf(stem) !== -1;
+		}
+
+		function filenameFromContentDisposition(header) {
+			if (!header) return '';
+			try {
+				var encoded = header.match(/filename\*\s*=\s*[^']*''([^;]+)/i);
+				if (encoded && encoded[1]) return cleanDownloadFilename(decodeURIComponent(encoded[1].replace(/^\"|\"$/g, '')));
+				var plain = header.match(/filename\s*=\s*(?:\"([^\"]+)\"|([^;]+))/i);
+				return cleanDownloadFilename(plain ? (plain[1] || plain[2]) : '');
+			} catch (e) {
+				return '';
+			}
+		}
+
+		function resolveDownloadFilename(filename, contentDisposition) {
+			var candidates = [filenameFromContentDisposition(contentDisposition), lastClickedDocName, filename];
+			for (var i = 0; i < candidates.length; i++) {
+				var candidate = cleanDownloadFilename(candidates[i]);
+				if (candidate && !isPlaceholderDownloadFilename(candidate)) return candidate;
+			}
+			for (var j = 0; j < candidates.length; j++) {
+				var fallback = cleanDownloadFilename(candidates[j]);
+				if (fallback) return fallback;
+			}
+			return 'whatsapp_file';
+		}
+
 		// Dismiss WhatsApp Web's internal stuck viewer overlay
 		function dismissStuckViewer() {
 			var attempts = 0;
@@ -1297,7 +1340,7 @@ func getInitScript(ua string) string {
 					(blob && (blob.type === 'application/octet-stream' || bType === '') && isRecentPDFIntent());
 
 				if (blob && isDocBlob && !isRecentUpload() && !isRecentExplicitDownload()) {
-					var name = lastClickedDocName || 'document';
+					var name = resolveDownloadFilename(lastClickedDocName, '') || 'document';
 					if (!name.includes('.')) {
 						if (bType.indexOf('pdf') >= 0) name += '.pdf';
 						else if (bType.indexOf('sheet') >= 0 || bType.indexOf('excel') >= 0) name += '.xlsx';
@@ -1328,7 +1371,7 @@ func getInitScript(ua string) string {
 		};
 
 		function handleBlobDocumentPreview(blobUrl) {
-			var name = lastClickedDocName || 'document.pdf';
+			var name = resolveDownloadFilename(lastClickedDocName, '') || 'document.pdf';
 			fetch(blobUrl)
 				.then(function(res) { return res.blob(); })
 				.then(function(blob) {
@@ -2628,7 +2671,7 @@ func getInitScript(ua string) string {
 			}
 
 			function captureDownload(href, filename, shouldAutoOpen) {
-				if (!filename) filename = 'whatsapp_file';
+				filename = resolveDownloadFilename(filename, '');
 				var isDoc = isDocumentFileName(filename);
 				if (shouldAutoOpen === undefined) {
 					shouldAutoOpen = isDoc;
@@ -2643,6 +2686,7 @@ func getInitScript(ua string) string {
 
 				fetch(href)
 					.then(function(response) {
+						filename = resolveDownloadFilename(filename, response.headers.get('Content-Disposition'));
 						return response.blob();
 					})
 					.then(function(blob) {
@@ -2790,7 +2834,7 @@ func getInitScript(ua string) string {
 				var downloadAttr = this.getAttribute('download');
 				var href = this.href || this.getAttribute('href');
 				if ((downloadAttr !== null || this.download) && href && (href.indexOf('blob:') === 0 || href.indexOf('data:') === 0)) {
-					var name = downloadAttr || this.download || lastClickedDocName || 'whatsapp_media';
+					var name = resolveDownloadFilename(downloadAttr || this.download || lastClickedDocName || 'whatsapp_media', '');
 					// An explicit download anchor means save only. Opening a document
 					// preview is reserved for clicking the document itself.
 					lastExplicitDownloadAt = Date.now();
@@ -2810,7 +2854,7 @@ func getInitScript(ua string) string {
 						if ((downloadAttr !== null || target.download) && href && (href.indexOf('blob:') === 0 || href.indexOf('data:') === 0)) {
 							e.preventDefault();
 							e.stopPropagation();
-							var name = downloadAttr || target.download || lastClickedDocName || 'whatsapp_media';
+							var name = resolveDownloadFilename(downloadAttr || target.download || lastClickedDocName || 'whatsapp_media', '');
 							// The user clicked Download directly: do not open a second preview.
 							lastExplicitDownloadAt = Date.now();
 							captureDownload(href, name, false);
