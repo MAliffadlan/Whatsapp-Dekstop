@@ -19,13 +19,14 @@ import (
 var downloadFileMu sync.Mutex
 
 type AppSettings struct {
-	DownloadDir       string `json:"download_dir"`
-	NotifyOnDownload  bool   `json:"notify_on_download"`
-	Theme             string `json:"theme"` // "dark", "light", "system"
-	OrganizeByMonth   bool   `json:"organize_by_month"`
-	SpellCheckEnabled bool   `json:"spell_check_enabled"`
-	SpellCheckLang    string `json:"spell_check_lang"`
-	BlurAvatars       bool   `json:"blur_avatars"`
+	DownloadDir          string `json:"download_dir"`
+	NotifyOnDownload     bool   `json:"notify_on_download"`
+	NotificationsEnabled bool   `json:"notifications_enabled"`
+	Theme                string `json:"theme"` // "dark", "light", "system"
+	OrganizeByMonth      bool   `json:"organize_by_month"`
+	SpellCheckEnabled    bool   `json:"spell_check_enabled"`
+	SpellCheckLang       string `json:"spell_check_lang"`
+	BlurAvatars          bool   `json:"blur_avatars"`
 	// LastCrashNotified is the unix time of the crash log last surfaced to
 	// the user via the issue reporter, so the startup nudge fires once.
 	LastCrashNotified int64 `json:"last_crash_notified"`
@@ -60,11 +61,12 @@ func getSettingsFilePath() string {
 
 func loadSettings() *AppSettings {
 	s := &AppSettings{
-		DownloadDir:       getDefaultDownloadDir(),
-		NotifyOnDownload:  true,
-		Theme:             "dark",
-		SpellCheckEnabled: true,
-		SpellCheckLang:    "auto",
+		DownloadDir:          getDefaultDownloadDir(),
+		NotifyOnDownload:     true,
+		NotificationsEnabled: true,
+		Theme:                "dark",
+		SpellCheckEnabled:    true,
+		SpellCheckLang:       "auto",
 	}
 	data, err := os.ReadFile(getSettingsFilePath())
 	if err != nil {
@@ -89,6 +91,17 @@ func saveSettings(s *AppSettings) error {
 		return err
 	}
 	return os.WriteFile(getSettingsFilePath(), data, 0644)
+}
+
+func getNotificationsEnabled() bool {
+	return loadSettings().NotificationsEnabled
+}
+
+func setNotificationsEnabled(enabled bool) bool {
+	s := loadSettings()
+	s.NotificationsEnabled = enabled
+	_ = saveSettings(s)
+	return s.NotificationsEnabled
 }
 
 func saveTheme(theme string) string {

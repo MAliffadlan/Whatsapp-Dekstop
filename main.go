@@ -177,10 +177,44 @@ func getInitScript(ua string) string {
 
 		// Native Notification Polyfill & ServiceWorker Notification Interceptor
 		waRunModule('notifications', function() {
+			var notificationsEnabled = true;
+			var notificationsStateReady = false;
+			window.isNotificationsEnabled = function() {
+				return notificationsStateReady && notificationsEnabled;
+			};
+			window.setNotificationsEnabled = function(enabled) {
+				enabled = !!enabled;
+				if (!window.setNotificationsEnabledNative) {
+					notificationsEnabled = enabled;
+					notificationsStateReady = true;
+					return Promise.resolve(notificationsEnabled);
+				}
+				return Promise.resolve(window.setNotificationsEnabledNative(enabled)).then(function(saved) {
+					notificationsEnabled = !!saved;
+					notificationsStateReady = true;
+					return notificationsEnabled;
+				});
+			};
+			window.refreshNotificationsEnabled = function() {
+				if (!window.getNotificationsEnabledNative) {
+					notificationsStateReady = true;
+					return Promise.resolve(notificationsEnabled);
+				}
+				return Promise.resolve(window.getNotificationsEnabledNative()).then(function(saved) {
+					notificationsEnabled = !!saved;
+					notificationsStateReady = true;
+					return notificationsEnabled;
+				}).catch(function() {
+					notificationsStateReady = true;
+					return notificationsEnabled;
+				});
+			};
+			window.refreshNotificationsEnabled();
+
 			function dispatchNativeNotification(title, options) {
 				options = options || {};
 				var body = options.body || '';
-				if (window.sendNativeNotification) {
+				if (notificationsStateReady && notificationsEnabled && window.sendNativeNotification) {
 					window.sendNativeNotification(title, body);
 				}
 			}
@@ -2279,7 +2313,7 @@ func getInitScript(ua string) string {
 				if (bannerParent) bannerParent.appendChild(banner);
 
 				try {
-					if (window.sendNativeNotification) {
+					if ((!window.isNotificationsEnabled || window.isNotificationsEnabled()) && window.sendNativeNotification) {
 						var notifTitle = 'Update Available';
 						var notifBody = 'WhatsApp Desk v' + latestVersion + ' is available. Click to update the application.';
 						window.sendNativeNotification(notifTitle, notifBody);
@@ -3474,6 +3508,21 @@ func getInitScript(ua string) string {
 					quickGrid.appendChild(mediaPermissionCard);
 				}
 
+				// Card 1: Desktop Notifications
+				var cardNotifications = document.createElement('div');
+				cardNotifications.className = 'wa-modal-card';
+				cardNotifications.style.cssText = 'border-radius:0;border-width:0 0 1px;border-style:solid;padding:12px 0;display:flex;align-items:center;justify-content:space-between;gap:16px;';
+				cardNotifications.innerHTML = '' +
+					'<div>' +
+					'  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">' +
+					'    <strong class="wa-text-primary" style="font-size:12.5px;">Desktop Notifications</strong>' +
+					'    <span id="wa-badge-notifications" style="font-size:10px;padding:1px 5px;border-radius:4px;font-weight:600;">...</span>' +
+					'  </div>' +
+					'  <div class="wa-text-muted" style="font-size:11px;">Allow or block system notifications on macOS, Linux, and Windows.</div>' +
+					'</div>' +
+					'<button id="wa-action-toggle-notifications" class="wa-card-btn" style="padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border-width:1px;border-style:solid;">Disable</button>';
+				quickGrid.appendChild(cardNotifications);
+
 				// Card 1: Privacy Mode
 				var cardPrivacy = document.createElement('div');
 				cardPrivacy.className = 'wa-modal-card';
@@ -3735,6 +3784,15 @@ func getInitScript(ua string) string {
 					var accent = isThemeDark ? '#00a884' : '#008069';
 
 					var privActive = window.isPrivacyModeActive ? window.isPrivacyModeActive() : false;
+					var notificationActive = window.isNotificationsEnabled ? window.isNotificationsEnabled() : true;
+					var badgeNotifications = document.getElementById('wa-badge-notifications');
+					var btnNotifications = document.getElementById('wa-action-toggle-notifications');
+					if (badgeNotifications && btnNotifications) {
+						badgeNotifications.textContent = notificationActive ? 'Enabled' : 'Disabled';
+						badgeNotifications.style.background = notificationActive ? (isThemeDark ? 'rgba(0,168,132,0.15)' : 'rgba(0,128,105,0.15)') : 'transparent';
+						badgeNotifications.style.color = notificationActive ? accent : '#8696a0';
+						btnNotifications.textContent = notificationActive ? 'Disable' : 'Enable';
+					}
 					var badgePriv = document.getElementById('wa-badge-priv');
 					var btnPriv = document.getElementById('wa-action-toggle-priv');
 					if (badgePriv && btnPriv) {
@@ -3776,7 +3834,6 @@ func getInitScript(ua string) string {
 
 					window.syncModalTheme(isThemeDark);
 				}
-
 				function mediaPermissionText(status) {
 					if (status === 'authorized') return 'Allowed';
 					if (status === 'denied') return 'Blocked';
@@ -3818,6 +3875,18 @@ func getInitScript(ua string) string {
 						});
 					};
 					refreshMediaPermissions();
+				}
+
+				document.getElementById('wa-action-toggle-notifications').onclick = function() {
+					if (window.setNotificationsEnabled) {
+						window.setNotificationsEnabled(!window.isNotificationsEnabled()).then(function() {
+							updateBadges();
+							showFloatingToast(window.isNotificationsEnabled() ? '🔔 Desktop notifications enabled' : '🔕 Desktop notifications disabled');
+						});
+					}
+				};
+				if (window.refreshNotificationsEnabled) {
+					window.refreshNotificationsEnabled().then(function() { updateBadges(); });
 				}
 				updateBadges();
 				if (window.refreshAutoStartState) {

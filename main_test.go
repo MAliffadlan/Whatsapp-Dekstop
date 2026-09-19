@@ -486,6 +486,23 @@ func TestMacMediaPermissionUXIncludesSettingsAndRetryControls(t *testing.T) {
 	}
 }
 
+func TestNotificationToggleGatesNativeNotificationsAcrossPlatforms(t *testing.T) {
+	script := getInitScript("test-agent")
+	for _, want := range []string{
+		"getNotificationsEnabledNative",
+		"setNotificationsEnabledNative",
+		"window.isNotificationsEnabled",
+		"window.setNotificationsEnabled",
+		"if (notificationsStateReady && notificationsEnabled && window.sendNativeNotification)",
+		"Desktop Notifications",
+		"wa-action-toggle-notifications",
+	} {
+		if !strings.Contains(script, want) {
+			t.Errorf("cross-platform notification toggle is missing %q", want)
+		}
+	}
+}
+
 func TestAllPlatformsApplySavedThemeToNativeWindow(t *testing.T) {
 	cases := []struct {
 		file   string

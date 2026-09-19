@@ -4,7 +4,6 @@ package main
 
 /*
 #cgo darwin CFLAGS: -x objective-c
-<<<<<<< HEAD
 #cgo darwin LDFLAGS: -framework Cocoa -framework WebKit -framework PDFKit -framework UserNotifications -framework AVFoundation
 
 #import <Cocoa/Cocoa.h>
@@ -1226,6 +1225,8 @@ func runApp() {
 	_ = w.Bind("sendNativeNotification", func(title, body string) {
 		go showNativeNotification(title, body)
 	})
+	_ = w.Bind("getNotificationsEnabledNative", getNotificationsEnabled)
+	_ = w.Bind("setNotificationsEnabledNative", setNotificationsEnabled)
 
 	_ = w.Bind("releaseMemoryNative", func() {
 		C.triggerNativeMemoryPurge()

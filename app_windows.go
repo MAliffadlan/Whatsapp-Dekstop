@@ -697,6 +697,8 @@ func runApp() {
 	_ = w.Bind("sendNativeNotification", func(title, body string) {
 		go showNativeNotification(title, body, iconFullPath, executablePath)
 	})
+	_ = w.Bind("getNotificationsEnabledNative", getNotificationsEnabled)
+	_ = w.Bind("setNotificationsEnabledNative", setNotificationsEnabled)
 
 	_ = w.Bind("releaseMemoryNative", func() {
 		// Note: do NOT call w.Suspend() here. The webview2 vendor library already
