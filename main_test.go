@@ -394,6 +394,8 @@ func TestPrivacyModeCoversArchivedChatsAndAllAvatarVariants(t *testing.T) {
 		"/^Archived\\b/i.test(text)",
 		"data-wa-privacy-archive-control",
 		"control.removeAttribute('data-wa-privacy-chat-row')",
+		"var archivedLabels = document.querySelectorAll('#side span, #side div, #pane-side span, #pane-side div')",
+		"labelParent.clientHeight >= 40",
 		".privacy-mode.blur-avatars #main header ._ak8h",
 		// Sparing timestamps in #side (including archived view)
 		"tagTimesIn(document.getElementById('side') || document.getElementById('pane-side'))",

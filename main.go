@@ -1944,6 +1944,20 @@ func getInitScript(ua string) string {
 						for (var a = 0; a < avatars.length; a++) avatars[a].setAttribute('data-wa-privacy-avatar', '1');
 					}
 				}
+				var archivedLabels = document.querySelectorAll('#side span, #side div, #pane-side span, #pane-side div');
+				for (var l = 0; l < archivedLabels.length; l++) {
+					var label = archivedLabels[l];
+					if ((label.textContent || '').trim() !== 'Archived') continue;
+					var labelParent = label;
+					for (var depth = 0; labelParent && depth < 8; depth++, labelParent = labelParent.parentElement) {
+						if ((labelParent.textContent || '').trim() !== 'Archived') continue;
+						if (labelParent.clientHeight >= 40 || labelParent.querySelector('[data-icon*="archive" i], [data-testid*="archive" i]')) {
+							labelParent.removeAttribute('data-wa-privacy-chat-row');
+							labelParent.setAttribute('data-wa-privacy-archive-control', '1');
+							break;
+						}
+					}
+				}
 				var archiveNodes = document.querySelectorAll('[data-icon*="archive" i], [data-testid*="archive" i], [aria-label*="archive" i]');
 				for (var n = 0; n < archiveNodes.length; n++) {
 					var control = archiveNodes[n];
