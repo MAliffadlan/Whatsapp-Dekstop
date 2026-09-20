@@ -385,8 +385,11 @@ func TestPrivacyModeCoversArchivedChatsAndAllAvatarVariants(t *testing.T) {
 		// Sidebar and archived rows are marked only when they contain chat text and an avatar.
 		"[data-wa-privacy-chat-row=\"1\"] span",
 		"var avatarSelector = 'img, image, ._ak8h",
+		"[data-testid*=\"avatar\" i]",
+		"[role=\"button\"] > div:first-child",
 		"[style*=\"background-image\"]",
 		"[data-wa-privacy-avatar=\"1\"]",
+		"/^Archived$/i.test(rowText)",
 		".privacy-mode.blur-avatars #main header ._ak8h",
 		// Sparing timestamps in #side (including archived view)
 		"tagTimesIn(document.getElementById('side') || document.getElementById('pane-side'))",

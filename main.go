@@ -1927,11 +1927,13 @@ func getInitScript(ua string) string {
 			function markPrivacyChatRows() {
 				var roots = document.querySelectorAll('#side, #pane-side, [data-testid="chat-list"], div[aria-label="Chat list"]');
 				var rowSelector = '[role="row"], [role="listitem"], [data-testid="cell-frame-container"], div._ak8l';
-				var avatarSelector = 'img, image, ._ak8h, [data-testid="default-user"], [data-icon="default-user"], [data-icon="default-group"], svg[viewBox="0 0 49 49"], [style*="background-image"]';
+				var avatarSelector = 'img, image, ._ak8h, [data-testid="default-user"], [data-testid*="avatar" i], [data-icon="default-user"], [data-icon="default-group"], svg[viewBox="0 0 49 49"], [style*="background-image"], [role="button"] > div:first-child, div.x78zum5 > div.x6s0dn4 > div';
 				for (var r = 0; r < roots.length; r++) {
 					var rows = roots[r].querySelectorAll(rowSelector);
 					for (var i = 0; i < rows.length; i++) {
 						var row = rows[i];
+						var rowText = (row.textContent || '').trim();
+						if (/^Archived$/i.test(rowText) || row.querySelector('[data-icon*="archive" i], [aria-label*="archive" i]')) continue;
 						if (row.querySelectorAll('span').length < 2 &&
 							!row.matches('[data-testid="cell-frame-container"], div._ak8l')) continue;
 						row.setAttribute('data-wa-privacy-chat-row', '1');
