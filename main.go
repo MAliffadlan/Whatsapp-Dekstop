@@ -1933,7 +1933,7 @@ func getInitScript(ua string) string {
 					for (var i = 0; i < rows.length; i++) {
 						var row = rows[i];
 						var rowText = (row.textContent || '').trim();
-						if (/^Archived$/i.test(rowText) || row.querySelector('[data-icon*="archive" i], [aria-label*="archive" i]')) continue;
+						if (/^Archived\b/i.test(rowText) || row.querySelector('[data-icon*="archive" i], [data-testid*="archive" i], [aria-label*="archive" i]')) continue;
 						if (row.querySelectorAll('span').length < 2 &&
 							!row.matches('[data-testid="cell-frame-container"], div._ak8l')) continue;
 						row.setAttribute('data-wa-privacy-chat-row', '1');
@@ -1941,6 +1941,11 @@ func getInitScript(ua string) string {
 						for (var a = 0; a < avatars.length; a++) avatars[a].setAttribute('data-wa-privacy-avatar', '1');
 					}
 				}
+			}
+			function isPrivacySidebarControl(node) {
+				if (!node || !node.matches) return false;
+				var text = (node.textContent || '').trim();
+				return /^Archived\b/i.test(text) || !!node.querySelector('[data-icon*="archive" i], [data-testid*="archive" i], [aria-label*="archive" i]');
 			}
 			function privacyChatListRootFromTarget(target) {
 				var node = target && target.nodeType === 1 ? target : null;
@@ -1956,6 +1961,7 @@ func getInitScript(ua string) string {
 				var listRoot = privacyChatListRootFromTarget(target);
 				var node = target && target.nodeType === 1 ? target : null;
 				while (node && node !== listRoot && node !== document.body) {
+					if (isPrivacySidebarControl(node)) return null;
 					if (node.matches && (node.matches('[role="row"]') ||
 						node.matches('[role="listitem"]') ||
 						node.matches('[data-testid="cell-frame-container"]') ||
