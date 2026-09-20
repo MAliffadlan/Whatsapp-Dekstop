@@ -1,6 +1,10 @@
 package main
 
 import (
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -197,5 +201,52 @@ func TestCheckForUpdateLive(t *testing.T) {
 	}
 	if infoOld.DownloadURL == "" {
 		t.Errorf("expected non-empty download URL")
+	}
+}
+
+func TestDownloadEnforcesSizeLimit(t *testing.T) {
+	prev := maxUpdateDownloadBytes
+	maxUpdateDownloadBytes = 64 << 10
+	t.Cleanup(func() { maxUpdateDownloadBytes = prev })
+
+	// Undeclared length (chunked) with a body far beyond the cap: the
+	// limiter must stop the write and remove the partial file.
+	big := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		chunk := make([]byte, 32<<10)
+		for i := 0; i < 8; i++ {
+			if _, err := w.Write(chunk); err != nil {
+				return
+			}
+			w.(http.Flusher).Flush()
+		}
+	}))
+	defer big.Close()
+
+	dest := filepath.Join(t.TempDir(), "update.bin")
+	err := downloadFileWithProgress(big.URL, dest, nil)
+	if err == nil || !strings.Contains(err.Error(), "exceeds") {
+		t.Fatalf("oversized download must be rejected, got %v", err)
+	}
+	if _, statErr := os.Stat(dest); !os.IsNotExist(statErr) {
+		t.Fatal("partial download must be removed after rejection")
+	}
+
+	// Honest small body still passes.
+	small := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("tiny-payload"))
+	}))
+	defer small.Close()
+	if err := downloadFileWithProgress(small.URL, filepath.Join(t.TempDir(), "ok.bin"), nil); err != nil {
+		t.Fatalf("small download must pass: %v", err)
+	}
+
+	// Declared Content-Length above the cap fails before any byte is read.
+	huge := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Length", "1073741824")
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer huge.Close()
+	if err := downloadFileWithProgress(huge.URL, filepath.Join(t.TempDir(), "huge.bin"), nil); err == nil {
+		t.Fatal("declared oversized download must fail fast")
 	}
 }

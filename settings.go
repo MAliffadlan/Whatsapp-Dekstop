@@ -363,6 +363,13 @@ func isAllowedOpenPath(filePath string) bool {
 	return false
 }
 
+// maxAttachmentBytes bounds a single saved attachment after base64
+// decoding. The bridge design buffers the whole file in RAM (JS string +
+// Go string + decoded bytes ≈ 2.7x), so an unbounded payload is an instant
+// OOM; 1 GB is far above legitimate chat attachments while keeping worst-
+// case memory use survivable on a desktop.
+var maxAttachmentBytes int64 = 1 << 30
+
 func saveDownloadedFileToDir(targetDir, filename, dataURI string) (string, error) {
 	// Validate before MkdirAll so a hostile settings.json can never cause a
 	// sensitive directory (e.g. ~/.config/autostart) to be created/populated.
@@ -377,6 +384,17 @@ func saveDownloadedFileToDir(targetDir, filename, dataURI string) (string, error
 	filename = filepath.Base(filepath.Clean(filename))
 	if filename == "." || filename == "/" || filename == "" {
 		filename = "download"
+	}
+
+	// Reject oversized payloads BEFORE decoding: base64 expands ~4/3, so
+	// checking the encoded length avoids the transient 2x memory spike of a
+	// decode-then-check.
+	payload := dataURI
+	if idx := strings.Index(dataURI, ";base64,"); idx != -1 {
+		payload = dataURI[idx+8:]
+	}
+	if int64(len(payload))*3/4 > maxAttachmentBytes {
+		return "", fmt.Errorf("attachment rejected: size exceeds %d-byte limit", maxAttachmentBytes)
 	}
 
 	// Extract and decode base64 payload
