@@ -365,6 +365,11 @@ func (pw *progressWriter) Write(p []byte) (int, error) {
 	return n, nil
 }
 
+// maxUpdateDownloadBytes bounds self-update downloads. Genuine release
+// artifacts are tens of megabytes; anything far beyond that is either a
+// compromised endpoint or a disk-fill attempt, never a legitimate update.
+var maxUpdateDownloadBytes int64 = 512 << 20
+
 func downloadFileWithProgress(url, destPath string, onProgress func(int)) error {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -382,6 +387,11 @@ func downloadFileWithProgress(url, destPath string, onProgress func(int)) error 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("download failed with HTTP %d", resp.StatusCode)
 	}
+	// Fast path: a truthful Content-Length above the cap fails before a
+	// single byte hits the disk.
+	if resp.ContentLength > maxUpdateDownloadBytes {
+		return fmt.Errorf("download rejected: declared size %d exceeds %d-byte limit", resp.ContentLength, maxUpdateDownloadBytes)
+	}
 
 	out, err := os.Create(destPath)
 	if err != nil {
@@ -394,8 +404,21 @@ func downloadFileWithProgress(url, destPath string, onProgress func(int)) error 
 		onProgress: onProgress,
 	}
 
-	_, err = io.Copy(out, io.TeeReader(resp.Body, pw))
-	return err
+	// Slow path: Content-Length may lie or be absent (chunked), so cap the
+	// body itself. The +1 detects overflow; a partial file never survives.
+	// (Closed explicitly before Remove: Windows cannot delete an open file.)
+	n, err := io.Copy(out, io.LimitReader(io.TeeReader(resp.Body, pw), maxUpdateDownloadBytes+1))
+	if err != nil {
+		_ = out.Close()
+		_ = os.Remove(destPath)
+		return err
+	}
+	if n > maxUpdateDownloadBytes {
+		_ = out.Close()
+		_ = os.Remove(destPath)
+		return fmt.Errorf("download rejected: size exceeds %d-byte limit", maxUpdateDownloadBytes)
+	}
+	return nil
 }
 
 // windowsUpdateBatch is kept platform-neutral so the restart contract can be

@@ -104,3 +104,18 @@ func TestSaveDownloadedFileKeepsDifferentContent(t *testing.T) {
 		t.Fatalf("different content must be preserved separately, got %q", second)
 	}
 }
+
+func TestSaveDownloadedFileRejectsOversizedPayload(t *testing.T) {
+	prev := maxAttachmentBytes
+	maxAttachmentBytes = 1024
+	t.Cleanup(func() { maxAttachmentBytes = prev })
+
+	dir := t.TempDir()
+	big := "data:application/octet-stream;base64," + base64.StdEncoding.EncodeToString(make([]byte, 2048))
+	if _, err := saveDownloadedFileToDir(dir, "big.bin", big); err == nil {
+		t.Fatal("oversized attachment must be rejected before decode")
+	}
+	if entries, _ := os.ReadDir(dir); len(entries) != 0 {
+		t.Fatal("rejected attachment must leave nothing on disk")
+	}
+}
