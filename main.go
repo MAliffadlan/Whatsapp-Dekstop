@@ -1966,6 +1966,7 @@ func getInitScript(ua string) string {
 					if (node.id === 'pane-side' || node.id === 'side' ||
 						node.getAttribute('data-testid') === 'chat-list' ||
 						node.getAttribute('aria-label') === 'Chat list' ||
+						node.getAttribute('data-wa-privacy-archived-view') === '1' ||
 						/archived/i.test(node.getAttribute('aria-label') || '')) return node;
 					node = node.parentElement;
 				}
@@ -1980,6 +1981,9 @@ func getInitScript(ua string) string {
 						node.matches('[data-testid="cell-frame-container"]') ||
 						node.matches('div[tabindex="-1"]') ||
 						node.matches('div._ak8l'))) return node;
+					if (listRoot && listRoot.getAttribute('data-wa-privacy-archived-view') === '1' &&
+						node.querySelector && node.querySelector('img, image') &&
+						node.querySelector('span')) return node;
 					node = node.parentElement;
 				}
 				return null;

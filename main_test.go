@@ -390,6 +390,8 @@ func TestPrivacyModeCoversArchivedChatsAndAllAvatarVariants(t *testing.T) {
 		"data-wa-privacy-archived-view",
 		"function markArchivedPrivacyViews()",
 		"querySelectorAll('img, image').length >= 2",
+		"data-wa-privacy-archived-view') === '1'",
+		"node.querySelector('img, image')",
 		// Avatar blur covers images, svg images, avatar container _ak8h, and default user SVGs
 		".privacy-mode.blur-avatars #side img",
 		".privacy-mode.blur-avatars #side image",
