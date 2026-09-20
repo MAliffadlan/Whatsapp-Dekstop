@@ -1018,3 +1018,63 @@ func TestWindowStateMaximizedSerialization(t *testing.T) {
 		t.Errorf("expected parsed.Maximized to be true")
 	}
 }
+
+func TestDocModalEscapesAttackerControlledStrings(t *testing.T) {
+	script := getInitScript("test-agent")
+
+	if !strings.Contains(script, "function escapeHtml(s) {") {
+		t.Fatal("injected script is missing the escapeHtml helper")
+	}
+	// Attacker-controlled values (chat-supplied filenames, saved paths,
+	// release titles) must never be concatenated raw into innerHTML.
+	for _, raw := range []string{
+		`title="' + filename + '">' + filename + '</strong>'`,
+		`break-all;">' + filename + '</h2>'`,
+		`">' + displayPath + '</div>'`,
+		`title="' + filename + '"></iframe>'`,
+		`color:#e9edef;">' + titleText + '</strong>'`,
+	} {
+		if strings.Contains(script, raw) {
+			t.Errorf("unescaped attacker-controlled interpolation remains: %q", raw)
+		}
+	}
+	for _, want := range []string{
+		`escapeHtml(filename) + '">' + escapeHtml(filename)`,
+		`escapeHtml(filename) + '</h2>'`,
+		`escapeHtml(displayPath)`,
+		`escapeHtml(filename) + '"></iframe>'`,
+		`escapeHtml(titleText)`,
+	} {
+		if !strings.Contains(script, want) {
+			t.Errorf("escaped interpolation missing: %q", want)
+		}
+	}
+}
+
+func TestEscapeHtmlNeutralizesMarkup(t *testing.T) {
+	if _, err := exec.LookPath("node"); err != nil {
+		t.Skip("node is not available")
+	}
+	script := getInitScript("test-agent")
+	start := strings.Index(script, "function escapeHtml(s) {")
+	if start < 0 {
+		t.Fatal("escapeHtml helper not found")
+	}
+	end := strings.Index(script[start:], "\n\t\t}\n")
+	if end < 0 {
+		t.Fatal("escapeHtml helper is incomplete")
+	}
+	fn := script[start : start+end+len("\n\t\t}")]
+
+	probe := fn + `
+	if (escapeHtml('"><img src=x onerror=alert(1)>.pdf') !== '&quot;&gt;&lt;img src=x onerror=alert(1)&gt;.pdf') throw new Error('attr/text breakout not escaped: ' + escapeHtml('"><img src=x onerror=alert(1)>.pdf'));
+	if (escapeHtml("a'b&c") !== 'a&#39;b&amp;c') throw new Error('quote/ampersand not escaped');
+	if (escapeHtml('laporan akhir.pdf') !== 'laporan akhir.pdf') throw new Error('valid filename altered');
+	if (escapeHtml('') !== '' || escapeHtml(null) !== '' || escapeHtml(undefined) !== '') throw new Error('empty/nullish mishandled');
+	console.log('escapeHtml OK');
+	`
+	cmd := exec.Command("node", "-e", probe)
+	if output, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("escapeHtml probe failed: %v\n%s", err, output)
+	}
+}
