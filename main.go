@@ -1972,6 +1972,24 @@ func getInitScript(ua string) string {
 					}
 				}
 			}
+			function forceArchivedControlVisible() {
+				var labels = document.querySelectorAll('#side span, #side div, #pane-side span, #pane-side div');
+				for (var i = 0; i < labels.length; i++) {
+					if ((labels[i].textContent || '').trim() !== 'Archived') continue;
+					var control = labels[i];
+					for (var depth = 0; control && depth < 10; depth++, control = control.parentElement) {
+						var rect = control.getBoundingClientRect ? control.getBoundingClientRect() : null;
+						var isRow = control.matches && control.matches('[role="row"], [role="listitem"], [data-testid="cell-frame-container"], div[tabindex="-1"], div._ak8l');
+						if (!isRow && (!rect || rect.height < 40 || rect.width < 200)) continue;
+						control.removeAttribute('data-wa-privacy-chat-row');
+						control.setAttribute('data-wa-privacy-archive-control', '1');
+						control.style.setProperty('filter', 'none', 'important');
+						var children = control.querySelectorAll('*');
+						for (var c = 0; c < children.length; c++) children[c].style.setProperty('filter', 'none', 'important');
+						break;
+					}
+				}
+			}
 			function isPrivacySidebarControl(node) {
 				if (!node || !node.matches) return false;
 				var text = (node.textContent || '').trim();
@@ -2055,6 +2073,7 @@ func getInitScript(ua string) string {
 					}
 					rootEl.classList.add('privacy-mode');
 					markPrivacyChatRows();
+					forceArchivedControlVisible();
 					if (!silent) showFloatingToast('🔒 Privacy Mode: Enabled');
 				} else {
 					rootEl.classList.remove('privacy-mode');
@@ -2103,6 +2122,7 @@ func getInitScript(ua string) string {
 			setInterval(function() {
 				if (!isPrivacyActive || shouldPauseBackgroundWork()) return;
 				markPrivacyChatRows();
+				forceArchivedControlVisible();
 				tagTimesIn(document.getElementById('main'));
 				tagTimesIn(document.getElementById('side') || document.getElementById('pane-side'));
 			}, 3000);
