@@ -348,6 +348,8 @@ func TestPrivacyModeUsesVisualBlurWithChatListHoverUnblur(t *testing.T) {
 		"data-wa-privacy-avatar",
 		"function markPrivacyChatRows()",
 		"function markArchivedPrivacyViews()",
+		"function scheduleArchivedPrivacyMark()",
+		"[0, 100, 300]",
 		"!row.matches('[data-testid=\"cell-frame-container\"], div._ak8l')",
 		"setProperty('filter', 'none', 'important')",
 		"div._ak8l",

@@ -2163,6 +2163,17 @@ func getInitScript(ua string) string {
 					}
 				}
 			}
+			function scheduleArchivedPrivacyMark() {
+				if (!isPrivacyActive) return;
+				[0, 100, 300].forEach(function(delay) {
+					setTimeout(function() {
+						if (isPrivacyActive) markArchivedPrivacyViews();
+					}, delay);
+				});
+			}
+			document.addEventListener('click', function() {
+				scheduleArchivedPrivacyMark();
+			}, true);
 			document.addEventListener('mouseover', function(e) { updatePrivacyHoverFromTarget(e.target); }, true);
 			document.addEventListener('mousemove', function(e) { updatePrivacyHoverFromTarget(e.target); }, true);
 			document.addEventListener('mouseout', function(e) {
