@@ -1744,12 +1744,20 @@ func getInitScript(ua string) string {
 				'.privacy-mode [data-testid="chat-list"] [role="listitem"] span,',
 				'.privacy-mode [data-testid="chat-list"] [data-testid="cell-frame-container"] span,',
 				'.privacy-mode [data-testid="chat-list"] div[tabindex="-1"] span,',
+				// Some Archived Chats layouts omit a stable chat-list ancestor.
+				'.privacy-mode [data-testid="cell-frame-container"] span,',
+				'.privacy-mode [role="row"] span,',
+				'.privacy-mode [role="listitem"] span,',
 				'.privacy-mode div[aria-label="Chat list"] span,',
 				'.privacy-mode div[aria-label*="Archived" i] span,',
 				'.privacy-mode [aria-label*="Archived" i] [role="row"] span,',
 				'.privacy-mode [aria-label*="Archived" i] [role="listitem"] span,',
 				'.privacy-mode [aria-label*="Archived" i] [data-testid="cell-frame-container"] span,',
-				'.privacy-mode [aria-label*="Archived" i] div[tabindex="-1"] span',
+				'.privacy-mode [aria-label*="Archived" i] div[tabindex="-1"] span,',
+				'.privacy-mode [data-wa-privacy-archived-view="1"] [role="row"] span,',
+				'.privacy-mode [data-wa-privacy-archived-view="1"] [role="listitem"] span,',
+				'.privacy-mode [data-wa-privacy-archived-view="1"] [data-testid="cell-frame-container"] span,',
+				'.privacy-mode [data-wa-privacy-archived-view="1"] div[tabindex="-1"] span',
 				'{ filter: blur(6px) !important; transition: filter 0.15s ease-out !important; }',
 				// Hovering any row or container restores its contents instantly.
 				'.privacy-mode [data-wa-privacy-hover="1"] span,',
@@ -2005,6 +2013,22 @@ func getInitScript(ua string) string {
 				var row = privacyChatRowFromTarget(target);
 				if (row) markPrivacyHoverRow(row);
 			}
+			function markArchivedPrivacyViews() {
+				var anchors = document.querySelectorAll('[aria-label*="Archived" i], [data-testid*="archiv" i], [role="heading"]');
+				for (var i = 0; i < anchors.length; i++) {
+					var anchor = anchors[i];
+					var label = (anchor.getAttribute('aria-label') || '').trim();
+					var text = (anchor.textContent || '').trim();
+					if (!/archived/i.test(label) && !/^Archived$/i.test(text)) continue;
+					var view = anchor;
+					for (var depth = 0; view && depth < 8; depth++, view = view.parentElement) {
+						if (view.querySelector && view.querySelector('[role="row"], [role="listitem"], [data-testid="cell-frame-container"], div[tabindex="-1"]')) {
+							view.setAttribute('data-wa-privacy-archived-view', '1');
+							break;
+						}
+					}
+				}
+			}
 			document.addEventListener('mouseover', function(e) { updatePrivacyHoverFromTarget(e.target); }, true);
 			document.addEventListener('mousemove', function(e) { updatePrivacyHoverFromTarget(e.target); }, true);
 			document.addEventListener('mouseout', function(e) {
@@ -2072,6 +2096,7 @@ func getInitScript(ua string) string {
 			}
 			setInterval(function() {
 				if (!isPrivacyActive || shouldPauseBackgroundWork()) return;
+				markArchivedPrivacyViews();
 				tagTimesIn(document.getElementById('main'));
 				tagTimesIn(document.getElementById('side') || document.getElementById('pane-side'));
 			}, 3000);

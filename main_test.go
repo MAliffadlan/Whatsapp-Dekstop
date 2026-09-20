@@ -385,6 +385,10 @@ func TestPrivacyModeCoversArchivedChatsAndAllAvatarVariants(t *testing.T) {
 		"[aria-label*=\"Archived\" i] [role=\"row\"] span",
 		"[aria-label*=\"Archived\" i] [role=\"listitem\"] span",
 		"[aria-label*=\"Archived\" i] [data-testid=\"cell-frame-container\"] span",
+		"[data-testid=\"cell-frame-container\"] span",
+		"[role=\"row\"] span",
+		"data-wa-privacy-archived-view",
+		"function markArchivedPrivacyViews()",
 		// Avatar blur covers images, svg images, avatar container _ak8h, and default user SVGs
 		".privacy-mode.blur-avatars #side img",
 		".privacy-mode.blur-avatars #side image",
