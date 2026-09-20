@@ -19,7 +19,36 @@ Version numbers are declared in exactly one place — `appVersion` in `updater.g
 
 ## [Unreleased]
 
-Nothing yet.
+Six pull requests contributed by [@MAliffadlan](https://github.com/MAliffadlan) land here
+together, with the macOS and spreadsheet-preview follow-ups they needed to be mergeable.
+
+### Security
+
+- Self-update downloads are restricted to release artifacts of this repository served over
+  HTTPS from `github.com`, so a page script can no longer point the updater at an arbitrary
+  URL (#44).
+- The download folder is validated against system and autostart locations, including symlink
+  escapes and dangling symlinks, and the open-file bridge is jailed to the download folder and
+  the internal preview directory (#44).
+- Attacker-controlled strings in the in-app document preview are HTML-escaped (#47), and
+  spreadsheet cell values are sanitized before they reach the preview table — SheetJS escapes
+  cell text but writes the raw value into a `data-v` attribute, which a crafted cell could use
+  to inject markup (#47 follow-up).
+- Self-update archives no longer propagate elevated mode bits on extraction, and the DBus tray
+  handler passes its error message as a format argument rather than as the format string
+  (#45, #46).
+- Self-update downloads are capped at 512 MB and saved attachments at 1 GB, checked before
+  decoding so an oversized payload cannot exhaust memory (#49).
+
+### Fixed
+
+- Linux: the StatusNotifierItem tray properties no longer abort the process on launch on
+  desktops with a tray watcher (#48).
+- `wa_crash.log` rotates past 1 MB with a single backup, so a crash loop can no longer grow it
+  without bound (#49).
+- macOS: the download-folder blocklist and the preview-directory check resolved only one side
+  of the comparison, so symlinked prefixes such as `/etc` and `/var` were never matched
+  (follow-up to #44).
 
 ---
 

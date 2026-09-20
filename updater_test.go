@@ -1,6 +1,10 @@
 package main
 
 import (
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -113,6 +117,41 @@ func TestProgressWriterFallback(t *testing.T) {
 	}
 }
 
+func TestIsAllowedUpdateURL(t *testing.T) {
+	allowed := []string{
+		"https://github.com/vianziro/Whatsapp-Dekstop/releases/latest/download/WhatsAppDesk.exe",
+		"https://github.com/vianziro/Whatsapp-Dekstop/releases/latest/download/WhatsApp-Desk-Linux-x64.tar.gz",
+		"https://github.com/vianziro/Whatsapp-Dekstop/releases/download/v1.5.9.7/WhatsApp-Desk-macOS-Universal.zip",
+		// Query strings must not bypass the check.
+		"https://github.com/vianziro/Whatsapp-Dekstop/releases/download/v1.5.9.7/WhatsAppDesk.exe?token=abc",
+	}
+	for _, u := range allowed {
+		if !isAllowedUpdateURL(u) {
+			t.Errorf("isAllowedUpdateURL(%q) = false, want true", u)
+		}
+	}
+
+	blocked := []string{
+		"",
+		"not a url",
+		"http://github.com/vianziro/Whatsapp-Dekstop/releases/latest/download/WhatsAppDesk.exe", // plain HTTP
+		"https://evil.example.com/WhatsAppDesk.exe",
+		"https://evil.example.com/vianziro/Whatsapp-Dekstop/releases/download/v1/evil.exe", // wrong host
+		"https://github.com.evil.example.com/vianziro/Whatsapp-Dekstop/releases/latest/download/x.exe",
+		"https://github.com/other-owner/Whatsapp-Dekstop/releases/latest/download/x.exe", // wrong owner
+		"https://github.com/vianziro/other-repo/releases/latest/download/x.exe",          // wrong repo
+		"https://github.com/vianziro/Whatsapp-Dekstop/blob/main/main.go",                 // not a release
+		"https://objects.githubusercontent.com/evil-payload",                             // CDN bypass attempt
+		"file:///tmp/evil.exe",
+		"javascript:alert(1)",
+	}
+	for _, u := range blocked {
+		if isAllowedUpdateURL(u) {
+			t.Errorf("isAllowedUpdateURL(%q) = true, want false", u)
+		}
+	}
+}
+
 func TestIsNewerVersion(t *testing.T) {
 	cases := []struct {
 		current string
@@ -162,5 +201,52 @@ func TestCheckForUpdateLive(t *testing.T) {
 	}
 	if infoOld.DownloadURL == "" {
 		t.Errorf("expected non-empty download URL")
+	}
+}
+
+func TestDownloadEnforcesSizeLimit(t *testing.T) {
+	prev := maxUpdateDownloadBytes
+	maxUpdateDownloadBytes = 64 << 10
+	t.Cleanup(func() { maxUpdateDownloadBytes = prev })
+
+	// Undeclared length (chunked) with a body far beyond the cap: the
+	// limiter must stop the write and remove the partial file.
+	big := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		chunk := make([]byte, 32<<10)
+		for i := 0; i < 8; i++ {
+			if _, err := w.Write(chunk); err != nil {
+				return
+			}
+			w.(http.Flusher).Flush()
+		}
+	}))
+	defer big.Close()
+
+	dest := filepath.Join(t.TempDir(), "update.bin")
+	err := downloadFileWithProgress(big.URL, dest, nil)
+	if err == nil || !strings.Contains(err.Error(), "exceeds") {
+		t.Fatalf("oversized download must be rejected, got %v", err)
+	}
+	if _, statErr := os.Stat(dest); !os.IsNotExist(statErr) {
+		t.Fatal("partial download must be removed after rejection")
+	}
+
+	// Honest small body still passes.
+	small := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("tiny-payload"))
+	}))
+	defer small.Close()
+	if err := downloadFileWithProgress(small.URL, filepath.Join(t.TempDir(), "ok.bin"), nil); err != nil {
+		t.Fatalf("small download must pass: %v", err)
+	}
+
+	// Declared Content-Length above the cap fails before any byte is read.
+	huge := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Length", "1073741824")
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer huge.Close()
+	if err := downloadFileWithProgress(huge.URL, filepath.Join(t.TempDir(), "huge.bin"), nil); err == nil {
+		t.Fatal("declared oversized download must fail fast")
 	}
 }
