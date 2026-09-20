@@ -1749,6 +1749,10 @@ func getInitScript(ua string) string {
 				'.privacy-mode [data-wa-privacy-archived-row="1"] ._ak8q,',
 				'.privacy-mode [data-wa-privacy-archived-row="1"] ._ak8k',
 				'{ filter: blur(6px) !important; transition: filter 0.15s ease-out !important; }',
+				// The Archived view explanation is UI guidance, not private chat data.
+				'.privacy-mode [data-wa-privacy-archived-info="1"],',
+				'.privacy-mode [data-wa-privacy-archived-info="1"] *',
+				'{ filter: none !important; }',
 				// Hovering any row or container restores its contents instantly.
 				'.privacy-mode [data-wa-privacy-hover="1"] span,',
 				'.privacy-mode [data-wa-privacy-hover="1"] ._ak8q,',
@@ -2030,6 +2034,18 @@ func getInitScript(ua string) string {
 						}
 					}
 				}
+				function markArchivedInfo(view) {
+					var candidates = view.querySelectorAll('span, p, div');
+					for (var i = 0; i < candidates.length; i++) {
+						var candidate = candidates[i];
+						var text = (candidate.textContent || '').trim();
+						if (text.length < 40 || text.length > 240) continue;
+						if (/^These chats stay archived when new messages are received/i.test(text) ||
+							/^To change this experience, go to settings > chats on your phone/i.test(text)) {
+							candidate.setAttribute('data-wa-privacy-archived-info', '1');
+						}
+					}
+				}
 				function scheduleArchivedPrivacyMark() {
 					if (!isPrivacyActive || scheduleArchivedPrivacyMark.pending) return;
 					scheduleArchivedPrivacyMark.pending = true;
@@ -2059,6 +2075,7 @@ func getInitScript(ua string) string {
 						var hasChatVisuals = view.querySelectorAll && view.querySelectorAll('img, image').length >= 2 && view.querySelectorAll('span').length >= 2;
 						if (hasChatRows || hasChatVisuals) {
 							view.setAttribute('data-wa-privacy-archived-view', '1');
+							markArchivedInfo(view);
 							markRowsInView(view);
 							break;
 						}
