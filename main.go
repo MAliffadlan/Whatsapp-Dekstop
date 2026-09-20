@@ -1757,7 +1757,11 @@ func getInitScript(ua string) string {
 				'.privacy-mode [data-wa-privacy-archived-view="1"] [role="row"] span,',
 				'.privacy-mode [data-wa-privacy-archived-view="1"] [role="listitem"] span,',
 				'.privacy-mode [data-wa-privacy-archived-view="1"] [data-testid="cell-frame-container"] span,',
-				'.privacy-mode [data-wa-privacy-archived-view="1"] div[tabindex="-1"] span',
+				'.privacy-mode [data-wa-privacy-archived-view="1"] div[tabindex="-1"] span,',
+				'.privacy-mode [data-wa-privacy-archived-view="1"] span,',
+				'.privacy-mode [data-wa-privacy-archived-view="1"] img,',
+				'.privacy-mode [data-wa-privacy-archived-view="1"] image,',
+				'.privacy-mode [data-wa-privacy-archived-view="1"] svg',
 				'{ filter: blur(6px) !important; transition: filter 0.15s ease-out !important; }',
 				// Hovering any row or container restores its contents instantly.
 				'.privacy-mode [data-wa-privacy-hover="1"] span,',
@@ -2014,7 +2018,7 @@ func getInitScript(ua string) string {
 				if (row) markPrivacyHoverRow(row);
 			}
 			function markArchivedPrivacyViews() {
-				var anchors = document.querySelectorAll('[aria-label*="Archived" i], [data-testid*="archiv" i], [role="heading"]');
+				var anchors = document.querySelectorAll('[aria-label*="Archived" i], [data-testid*="archiv" i], [role="heading"], h1, h2, h3');
 				for (var i = 0; i < anchors.length; i++) {
 					var anchor = anchors[i];
 					var label = (anchor.getAttribute('aria-label') || '').trim();
@@ -2022,7 +2026,9 @@ func getInitScript(ua string) string {
 					if (!/archived/i.test(label) && !/^Archived$/i.test(text)) continue;
 					var view = anchor;
 					for (var depth = 0; view && depth < 8; depth++, view = view.parentElement) {
-						if (view.querySelector && view.querySelector('[role="row"], [role="listitem"], [data-testid="cell-frame-container"], div[tabindex="-1"]')) {
+						var hasChatRows = view.querySelector && view.querySelector('[role="row"], [role="listitem"], [data-testid="cell-frame-container"], div[tabindex="-1"]');
+						var hasChatVisuals = view.querySelectorAll && view.querySelectorAll('img, image').length >= 2 && view.querySelectorAll('span').length >= 2;
+						if (hasChatRows || hasChatVisuals) {
 							view.setAttribute('data-wa-privacy-archived-view', '1');
 							break;
 						}
