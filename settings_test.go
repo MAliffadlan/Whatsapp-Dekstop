@@ -86,6 +86,109 @@ func TestSaveDownloadedFileReusesIdenticalDownload(t *testing.T) {
 	}
 }
 
+func TestValidateDownloadDirRejectsSensitive(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
+
+	blocked := []string{
+		"/proc",
+		"/proc/self",
+		"/sys",
+		"/etc",
+		"/etc/cron.d",
+		"/root",
+		filepath.Join(home, ".config", "autostart"),
+		filepath.Join(home, ".config", "autostart", "2026-01"),
+		filepath.Join(home, ".local", "share", "applications"),
+		filepath.Join(home, ".config", "systemd", "user"),
+	}
+	for _, dir := range blocked {
+		if err := validateDownloadDir(dir); err == nil {
+			t.Errorf("validateDownloadDir(%q) = nil, want error", dir)
+		}
+	}
+
+	// A symlink pointing at a blocked location must be rejected too.
+	link := filepath.Join(home, "my-downloads")
+	if err := os.Symlink(filepath.Join(home, ".config", "autostart"), link); err != nil {
+		t.Fatal(err)
+	}
+	if err := validateDownloadDir(link); err == nil {
+		t.Errorf("validateDownloadDir(symlink %q -> autostart) = nil, want error", link)
+	}
+
+	if err := validateDownloadDir("   "); err == nil {
+		t.Error("validateDownloadDir(empty) = nil, want error")
+	}
+}
+
+func TestValidateDownloadDirAcceptsNormal(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+
+	ok := []string{
+		filepath.Join(home, "Downloads", "WhatsApp Downloads"),
+		filepath.Join(home, "Downloads", "WhatsApp Downloads", "2026-01"), // monthly subfolder
+		t.TempDir(),
+	}
+	for _, dir := range ok {
+		if err := validateDownloadDir(dir); err != nil {
+			t.Errorf("validateDownloadDir(%q) = %v, want nil", dir, err)
+		}
+	}
+}
+
+func TestSaveDownloadedFileRefusesSensitiveDir(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+
+	b64 := "data:text/plain;base64," + base64.StdEncoding.EncodeToString([]byte("pwn"))
+	if _, err := saveDownloadedFileToDir(filepath.Join(home, ".config", "autostart"), "x.txt", b64); err == nil {
+		t.Fatal("saveDownloadedFileToDir(autostart) = nil, want error")
+	}
+	// Nothing must have been created there.
+	if _, err := os.Stat(filepath.Join(home, ".config", "autostart", "x.txt")); !os.IsNotExist(err) {
+		t.Fatal("sensitive directory was populated despite validation")
+	}
+}
+
+func TestOpenFileIsJailedToDownloadAndPreviewDirs(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
+
+	dl := filepath.Join(home, "Downloads", "WA")
+	if err := os.MkdirAll(dl, 0755); err != nil {
+		t.Fatal(err)
+	}
+	// Point settings at our temp download dir via env-isolated config home.
+	s := loadSettings()
+	s.DownloadDir = dl
+	if err := saveSettings(s); err != nil {
+		t.Fatal(err)
+	}
+
+	inside := filepath.Join(dl, "2026-01", "doc.pdf")
+	if err := os.MkdirAll(filepath.Dir(inside), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(inside, []byte("x"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if !isAllowedOpenPath(inside) {
+		t.Errorf("isAllowedOpenPath(%q) = false, want true (inside download dir)", inside)
+	}
+
+	for _, bad := range []string{"/etc/passwd", "/etc/hosts", filepath.Join(home, ".bashrc")} {
+		if isAllowedOpenPath(bad) {
+			t.Errorf("isAllowedOpenPath(%q) = true, want false", bad)
+		}
+	}
+	if openFileInDefaultApp("/etc/passwd") {
+		t.Error("openFileInDefaultApp(/etc/passwd) = true, want false")
+	}
+}
 func TestSaveDownloadedFileKeepsDifferentContent(t *testing.T) {
 	tempDir := t.TempDir()
 	encode := func(value string) string {

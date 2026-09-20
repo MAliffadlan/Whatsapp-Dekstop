@@ -76,6 +76,12 @@ func loadSettings() *AppSettings {
 	if strings.TrimSpace(s.DownloadDir) == "" {
 		s.DownloadDir = getDefaultDownloadDir()
 	}
+	// A tampered or misguided settings.json must never turn the download
+	// folder into a persistence primitive (e.g. ~/.config/autostart): fall
+	// back to the default instead of writing attacker-controlled bytes there.
+	if err := validateDownloadDir(s.DownloadDir); err != nil {
+		s.DownloadDir = getDefaultDownloadDir()
+	}
 	if strings.TrimSpace(s.Theme) == "" {
 		s.Theme = "dark"
 	}
@@ -224,7 +230,140 @@ func fileExistsInDownloadDir(filename string) bool {
 	return findDownloadedFile(filename) != ""
 }
 
+// blockedDownloadDirPrefixes lists locations a download folder must never
+// point at. The autostart/systemd entries would turn every saved attachment
+// into a persistence primitive; the system entries can never be a legitimate
+// user download folder and are rejected with a clear error instead of a
+// confusing MkdirAll failure.
+func blockedDownloadDirPrefixes() []string {
+	prefixes := []string{"/dev", "/proc", "/sys", "/etc", "/bin", "/sbin", "/usr", "/boot", "/root"}
+	if home, err := os.UserHomeDir(); err == nil && strings.TrimSpace(home) != "" {
+		home = filepath.Clean(home)
+		prefixes = append(prefixes,
+			filepath.Join(home, ".config", "autostart"),
+			filepath.Join(home, ".local", "share", "applications"),
+			filepath.Join(home, ".config", "systemd"),
+			filepath.Join(home, ".local", "share", "systemd"),
+			filepath.Join(home, ".config", "environment.d"),
+		)
+	}
+	return prefixes
+}
+
+// resolveForValidation returns the canonical form of dir, resolving symlinks
+// even when the final target does not exist yet. filepath.EvalSymlinks alone
+// cannot do that: a dangling link (e.g. ~/my-downloads -> ~/.config/autostart
+// before autostart exists) would fail to resolve and slip past the blocklist,
+// while MkdirAll later follows the link and creates the sensitive directory.
+func resolveForValidation(dir string) string {
+	abs := filepath.Clean(dir)
+	for i := 0; i < 16; i++ {
+		// Longest prefix that exists. Lstat (not Stat) is deliberate: it
+		// reports the link itself instead of following it.
+		existing := abs
+		for {
+			if _, err := os.Lstat(existing); err == nil {
+				break
+			}
+			parent := filepath.Dir(existing)
+			if parent == existing {
+				return abs
+			}
+			existing = parent
+		}
+		st, err := os.Lstat(existing)
+		if err != nil {
+			return abs
+		}
+		// existing was derived from abs by stripping tail components, so the
+		// remainder is "" or starts with a separator.
+		rest := strings.TrimPrefix(abs, existing)
+		if st.Mode()&os.ModeSymlink == 0 {
+			if resolved, err := filepath.EvalSymlinks(existing); err == nil {
+				abs = filepath.Clean(filepath.Join(resolved, rest))
+			}
+			return abs
+		}
+		target, err := os.Readlink(existing)
+		if err != nil {
+			return abs
+		}
+		if !filepath.IsAbs(target) {
+			target = filepath.Join(filepath.Dir(existing), target)
+		}
+		abs = filepath.Clean(filepath.Join(target, rest))
+	}
+	return abs
+}
+
+// validateDownloadDir rejects empty paths, paths escaping to sensitive system
+// or autostart locations (including via symlinks, even dangling ones), and
+// paths that exist but are not directories. It does not create anything.
+func validateDownloadDir(dir string) error {
+	trimmed := strings.TrimSpace(dir)
+	if trimmed == "" {
+		return fmt.Errorf("download directory is empty")
+	}
+	abs, err := filepath.Abs(trimmed)
+	if err != nil {
+		return fmt.Errorf("invalid download directory: %w", err)
+	}
+	abs = resolveForValidation(abs)
+	for _, blocked := range blockedDownloadDirPrefixes() {
+		blocked = filepath.Clean(blocked)
+		if abs == blocked || strings.HasPrefix(abs, blocked+string(os.PathSeparator)) {
+			return fmt.Errorf("download directory must not point at %s", blocked)
+		}
+	}
+	if info, err := os.Stat(abs); err == nil && !info.IsDir() {
+		return fmt.Errorf("download directory is not a directory: %s", trimmed)
+	}
+	return nil
+}
+
+// pathWithinDir reports whether absPath equals dir or lives inside it.
+// Both arguments must already be absolute and clean.
+func pathWithinDir(absPath, dir string) bool {
+	return absPath == dir || strings.HasPrefix(absPath, dir+string(os.PathSeparator))
+}
+
+// isAllowedOpenPath jails the open-file bridge to the user's download folder
+// (including monthly subfolders) and the internal preview temp dir, so page
+// JavaScript cannot ask the native side to open arbitrary files such as
+// /etc/passwd with the default application.
+func isAllowedOpenPath(filePath string) bool {
+	trimmed := strings.TrimSpace(filePath)
+	if trimmed == "" {
+		return false
+	}
+	abs, err := filepath.Abs(trimmed)
+	if err != nil {
+		return false
+	}
+	abs = resolveForValidation(abs)
+	if dl := strings.TrimSpace(loadSettings().DownloadDir); dl != "" {
+		if dlAbs, err := filepath.Abs(dl); err == nil {
+			dlAbs = resolveForValidation(dlAbs)
+			if pathWithinDir(abs, dlAbs) {
+				return true
+			}
+		}
+	}
+	previewDir := filepath.Join(os.TempDir(), "WhatsAppDeskPreview")
+	if prevAbs, err := filepath.Abs(previewDir); err == nil {
+		if pathWithinDir(filepath.Clean(abs), filepath.Clean(prevAbs)) {
+			return true
+		}
+	}
+	return false
+}
+
 func saveDownloadedFileToDir(targetDir, filename, dataURI string) (string, error) {
+	// Validate before MkdirAll so a hostile settings.json can never cause a
+	// sensitive directory (e.g. ~/.config/autostart) to be created/populated.
+	if err := validateDownloadDir(targetDir); err != nil {
+		return "", err
+	}
 	if err := os.MkdirAll(targetDir, 0755); err != nil {
 		return "", fmt.Errorf("failed to create target directory: %w", err)
 	}
@@ -353,6 +492,11 @@ func previewDocument(filename, dataURI string) (string, error) {
 
 func openFileInDefaultApp(filePath string) bool {
 	if filePath == "" {
+		return false
+	}
+	// Jail: the path arrives via the JS bridge, so only files inside the
+	// download folder or the internal preview dir may be opened.
+	if !isAllowedOpenPath(filePath) {
 		return false
 	}
 	if _, err := os.Stat(filePath); err != nil {

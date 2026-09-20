@@ -862,6 +862,11 @@ func runApp() {
 		if err != nil || selected == "" {
 			return ""
 		}
+		// Fast-fail here (the shared saver and loadSettings re-validate
+		// anyway) so the UI never reports a sensitive folder as applied.
+		if err := validateDownloadDir(selected); err != nil {
+			return ""
+		}
 		s := loadSettings()
 		s.DownloadDir = selected
 		_ = saveSettings(s)
