@@ -381,17 +381,14 @@ func TestPrivacyModeCoversArchivedChatsAndAllAvatarVariants(t *testing.T) {
 		// Sidebar & Archived chats text protection
 		"#side [role=\"row\"] span",
 		"#side [role=\"listitem\"] span",
-		"div[aria-label*=\"Archived\" i]",
-		"[aria-label*=\"Archived\" i] [role=\"row\"] span",
-		"[aria-label*=\"Archived\" i] [role=\"listitem\"] span",
-		"[aria-label*=\"Archived\" i] [data-testid=\"cell-frame-container\"] span",
 		"[data-testid=\"cell-frame-container\"] span",
 		"[role=\"row\"] span",
 		"data-wa-privacy-archived-view",
 		"function markArchivedPrivacyViews()",
 		"querySelectorAll('img, image').length >= 2",
-		"data-wa-privacy-archived-view') === '1'",
-		"node.querySelector('img, image')",
+		"data-wa-privacy-archived-row",
+		"function markRowsInView(view)",
+		"imageCount === 1 && textCount >= 2",
 		// Avatar blur covers images, svg images, avatar container _ak8h, and default user SVGs
 		".privacy-mode.blur-avatars #side img",
 		".privacy-mode.blur-avatars #side image",
@@ -405,7 +402,6 @@ func TestPrivacyModeCoversArchivedChatsAndAllAvatarVariants(t *testing.T) {
 		"#side [role=\"row\"]:hover image",
 		"#side ._ak8h:hover",
 		"#side ._ak8h:hover *",
-		"[aria-label*=\"Archived\" i] [role=\"row\"] img",
 		"/archived/i.test(node.getAttribute('aria-label') || '')",
 		// Sparing timestamps in #side (including archived view)
 		"tagTimesIn(document.getElementById('side') || document.getElementById('pane-side'))",
