@@ -1745,7 +1745,11 @@ func getInitScript(ua string) string {
 				'.privacy-mode [data-testid="chat-list"] [data-testid="cell-frame-container"] span,',
 				'.privacy-mode [data-testid="chat-list"] div[tabindex="-1"] span,',
 				'.privacy-mode div[aria-label="Chat list"] span,',
-				'.privacy-mode div[aria-label*="Archived" i] span',
+				'.privacy-mode div[aria-label*="Archived" i] span,',
+				'.privacy-mode [aria-label*="Archived" i] [role="row"] span,',
+				'.privacy-mode [aria-label*="Archived" i] [role="listitem"] span,',
+				'.privacy-mode [aria-label*="Archived" i] [data-testid="cell-frame-container"] span,',
+				'.privacy-mode [aria-label*="Archived" i] div[tabindex="-1"] span',
 				'{ filter: blur(6px) !important; transition: filter 0.15s ease-out !important; }',
 				// Hovering any row or container restores its contents instantly.
 				'.privacy-mode [data-wa-privacy-hover="1"] span,',
@@ -1818,6 +1822,12 @@ func getInitScript(ua string) string {
 				'.privacy-mode.blur-avatars div[aria-label*="Archived" i] img,',
 				'.privacy-mode.blur-avatars div[aria-label*="Archived" i] image,',
 				'.privacy-mode.blur-avatars div[aria-label*="Archived" i] ._ak8h,',
+				'.privacy-mode.blur-avatars [aria-label*="Archived" i] [role="row"] img,',
+				'.privacy-mode.blur-avatars [aria-label*="Archived" i] [role="row"] image,',
+				'.privacy-mode.blur-avatars [aria-label*="Archived" i] [role="row"] ._ak8h,',
+				'.privacy-mode.blur-avatars [aria-label*="Archived" i] [role="listitem"] img,',
+				'.privacy-mode.blur-avatars [aria-label*="Archived" i] [role="listitem"] image,',
+				'.privacy-mode.blur-avatars [aria-label*="Archived" i] [role="listitem"] ._ak8h,',
 				'.privacy-mode.blur-avatars #main header img,',
 				'.privacy-mode.blur-avatars #main header image,',
 				'.privacy-mode.blur-avatars #main header ._ak8h,',
@@ -1943,7 +1953,8 @@ func getInitScript(ua string) string {
 				while (node && node !== document.body) {
 					if (node.id === 'pane-side' || node.id === 'side' ||
 						node.getAttribute('data-testid') === 'chat-list' ||
-						node.getAttribute('aria-label') === 'Chat list') return node;
+						node.getAttribute('aria-label') === 'Chat list' ||
+						/archived/i.test(node.getAttribute('aria-label') || '')) return node;
 					node = node.parentElement;
 				}
 				return null;
