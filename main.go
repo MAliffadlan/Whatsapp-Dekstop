@@ -367,6 +367,18 @@ func getInitScript(ua string) string {
 			}
 		}
 
+		// Escape a string for interpolation into innerHTML or an HTML
+		// attribute. Filenames and paths here originate from chat content
+		// (extractDocumentName) or release metadata, so they must never be
+		// concatenated raw: a name like '"><img src=x onerror=...>x.pdf'
+		// would otherwise execute in the privileged page context that can
+		// reach every native bridge. Valid names render identically.
+		function escapeHtml(s) {
+			return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {
+				return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+			});
+		}
+
 		function isPlaceholderDownloadFilename(name) {
 			var clean = cleanDownloadFilename(name).toLowerCase();
 			if (!clean) return true;
@@ -1076,7 +1088,7 @@ func getInitScript(ua string) string {
 				'<div style="display:flex;align-items:center;gap:10px;min-width:0;">' +
 				'  <span style="font-size:22px;">' + docIcon + '</span>' +
 				'  <div style="min-width:0;">' +
-				'    <strong style="font-size:13.5px;color:#e9edef;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;max-width:420px;" title="' + filename + '">' + filename + '</strong>' +
+				'    <strong style="font-size:13.5px;color:#e9edef;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;max-width:420px;" title="' + escapeHtml(filename) + '">' + escapeHtml(filename) + '</strong>' +
 				'    <span style="font-size:11px;color:#8696a0;">' + docTypeLabel + ' · Direct Preview</span>' +
 				'  </div>' +
 				'</div>' +
@@ -1114,12 +1126,12 @@ func getInitScript(ua string) string {
 				body.innerHTML = '' +
 					'<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;text-align:center;">' +
 					'  <div style="font-size:64px;margin-bottom:16px;">' + docIcon + '</div>' +
-					'  <h2 style="color:#e9edef;font-size:18px;font-weight:600;margin:0 0 8px;max-width:540px;word-break:break-all;">' + filename + '</h2>' +
+					'  <h2 style="color:#e9edef;font-size:18px;font-weight:600;margin:0 0 8px;max-width:540px;word-break:break-all;">' + escapeHtml(filename) + '</h2>' +
 					'  <div style="color:#00a884;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">' + docTypeLabel + ' · Saved</div>' +
 					'  <p style="color:#8696a0;font-size:13px;max-width:460px;line-height:1.5;margin:0 0 16px;">' +
 					(hint || ('The ' + docTypeLabel + ' is saved on your computer. Click below to open it in your default application.')) +
 					'  </p>' +
-					'  <div style="font-family:monospace;font-size:11px;color:#8696a0;background:rgba(255,255,255,0.06);padding:6px 14px;border-radius:6px;max-width:520px;overflow:hidden;text-overflow:ellipsis;margin-bottom:24px;border:1px solid rgba(255,255,255,0.08);">' + displayPath + '</div>' +
+					'  <div style="font-family:monospace;font-size:11px;color:#8696a0;background:rgba(255,255,255,0.06);padding:6px 14px;border-radius:6px;max-width:520px;overflow:hidden;text-overflow:ellipsis;margin-bottom:24px;border:1px solid rgba(255,255,255,0.08);">' + escapeHtml(displayPath) + '</div>' +
 					'  <div style="display:flex;gap:12px;align-items:center;">' +
 					'    <button id="wa-btn-card-launch" style="background:#00a884;color:#111b21;border:none;padding:10px 24px;border-radius:8px;font-size:13.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 4px 12px rgba(0,168,132,0.3);">' +
 					openBtnText +
@@ -1219,7 +1231,7 @@ func getInitScript(ua string) string {
 					pdfSrc = 'data:application/pdf;base64,' + dataUri.split(';base64,')[1];
 				}
 				if (pdfSrc) {
-					body.innerHTML = '<iframe src="' + pdfSrc + '" style="width:100%;height:100%;border:none;background:#525659;" title="' + filename + '"></iframe>';
+					body.innerHTML = '<iframe src="' + pdfSrc + '" style="width:100%;height:100%;border:none;background:#525659;" title="' + escapeHtml(filename) + '"></iframe>';
 				} else {
 					renderCardFallback();
 				}
@@ -2259,7 +2271,7 @@ func getInitScript(ua string) string {
 				msg.id = 'wa-update-text';
 				msg.style.cssText = 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12.5px;color:#d1d7db;';
 				var titleText = releaseTitle ? releaseTitle : ('WhatsApp Desk v' + latestVersion);
-				msg.innerHTML = 'Update available: <strong style="color:#e9edef;">' + titleText + '</strong>';
+				msg.innerHTML = 'Update available: <strong style="color:#e9edef;">' + escapeHtml(titleText) + '</strong>';
 
 				leftWrap.appendChild(badge);
 				leftWrap.appendChild(msg);
