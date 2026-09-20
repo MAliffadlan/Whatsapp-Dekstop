@@ -2037,6 +2037,7 @@ func getInitScript(ua string) string {
 				return null;
 			}
 			function privacyChatRowFromTarget(target) {
+				if (isPrivacyArchivedInfo(target)) return null;
 				var listRoot = privacyChatListRootFromTarget(target);
 				var node = target && target.nodeType === 1 ? target : null;
 				while (node && node !== listRoot && node !== document.body) {
@@ -2050,6 +2051,14 @@ func getInitScript(ua string) string {
 					node = node.parentElement;
 				}
 				return null;
+			}
+			function isPrivacyArchivedInfo(target) {
+				var node = target && target.nodeType === 1 ? target : null;
+				while (node && node !== document.body) {
+					if (node.getAttribute && node.getAttribute('data-wa-privacy-archived-info') === '1') return true;
+					node = node.parentElement;
+				}
+				return false;
 			}
 			function clearPrivacyHoverRow() {
 				if (!activePrivacyHoverRow) return;
@@ -2083,6 +2092,7 @@ func getInitScript(ua string) string {
 				}
 				var row = privacyChatRowFromTarget(target);
 				if (row) markPrivacyHoverRow(row);
+				else clearPrivacyHoverRow();
 			}
 			function markArchivedPrivacyViews() {
 				var rowSelector = '[role="row"], [role="listitem"], [data-testid="cell-frame-container"], div[tabindex="-1"], div._ak8l';
@@ -2121,9 +2131,12 @@ func getInitScript(ua string) string {
 						var candidate = candidates[i];
 						var text = (candidate.textContent || '').replace(/\s+/g, ' ').trim();
 						if (text.length < 40 || text.length > 240) continue;
-						if (/^These chats stay archived when new messages are received/i.test(text) ||
-							/^To change this experience, go to settings > chats on your phone/i.test(text)) {
+						if (/These chats stay archived when new messages are received/i.test(text) ||
+							/To change this experience, go to settings > chats on your phone/i.test(text)) {
 							candidate.setAttribute('data-wa-privacy-archived-info', '1');
+							candidate.style.setProperty('filter', 'none', 'important');
+							var children = candidate.querySelectorAll('*');
+							for (var c = 0; c < children.length; c++) children[c].style.setProperty('filter', 'none', 'important');
 						}
 					}
 				}
