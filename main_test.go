@@ -340,6 +340,8 @@ func TestPrivacyModeUsesVisualBlurWithChatListHoverUnblur(t *testing.T) {
 		"data-wa-privacy-reveal",
 		"function privacyChatRowFromTarget(target)",
 		"function isPrivacyArchivedInfo(target)",
+		"if (!isPrivacyArchivedInfo(revealed[i])",
+		"if (isPrivacyArchivedInfo(revealTargets[i])) continue",
 		"function markPrivacyHoverRow(row)",
 		"function updatePrivacyHoverFromTarget(target)",
 		"data-wa-privacy-chat-row",

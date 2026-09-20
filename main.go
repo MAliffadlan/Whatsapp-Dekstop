@@ -2066,7 +2066,7 @@ func getInitScript(ua string) string {
 				var revealed = activePrivacyHoverRow.querySelectorAll('[data-wa-privacy-reveal="1"]');
 				for (var i = 0; i < revealed.length; i++) {
 					revealed[i].removeAttribute('data-wa-privacy-reveal');
-					if (revealed[i].getAttribute('data-wa-privacy-filter-overridden') === '1') {
+					if (!isPrivacyArchivedInfo(revealed[i]) && revealed[i].getAttribute('data-wa-privacy-filter-overridden') === '1') {
 						revealed[i].style.removeProperty('filter');
 						revealed[i].removeAttribute('data-wa-privacy-filter-overridden');
 					}
@@ -2080,6 +2080,7 @@ func getInitScript(ua string) string {
 				row.setAttribute('data-wa-privacy-hover', '1');
 				var revealTargets = row.querySelectorAll('span, ._ak8q, ._ak8k, img, image, button, [role="button"], [data-icon], svg, [data-wa-privacy-avatar="1"], [data-testid="default-user"], [data-icon="default-user"], [data-icon="default-group"]');
 				for (var i = 0; i < revealTargets.length; i++) {
+					if (isPrivacyArchivedInfo(revealTargets[i])) continue;
 					revealTargets[i].setAttribute('data-wa-privacy-reveal', '1');
 					revealTargets[i].style.setProperty('filter', 'none', 'important');
 					revealTargets[i].setAttribute('data-wa-privacy-filter-overridden', '1');
