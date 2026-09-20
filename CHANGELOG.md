@@ -19,6 +19,9 @@ Version numbers are declared in exactly one place — `appVersion` in `updater.g
 
 ## [Unreleased]
 
+Six pull requests contributed by [@MAliffadlan](https://github.com/MAliffadlan) land here
+together, with the macOS and spreadsheet-preview follow-ups they needed to be mergeable.
+
 ### Security
 
 - Self-update downloads are restricted to release artifacts of this repository served over
