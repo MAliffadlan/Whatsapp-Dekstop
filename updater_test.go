@@ -113,6 +113,41 @@ func TestProgressWriterFallback(t *testing.T) {
 	}
 }
 
+func TestIsAllowedUpdateURL(t *testing.T) {
+	allowed := []string{
+		"https://github.com/vianziro/Whatsapp-Dekstop/releases/latest/download/WhatsAppDesk.exe",
+		"https://github.com/vianziro/Whatsapp-Dekstop/releases/latest/download/WhatsApp-Desk-Linux-x64.tar.gz",
+		"https://github.com/vianziro/Whatsapp-Dekstop/releases/download/v1.5.9.7/WhatsApp-Desk-macOS-Universal.zip",
+		// Query strings must not bypass the check.
+		"https://github.com/vianziro/Whatsapp-Dekstop/releases/download/v1.5.9.7/WhatsAppDesk.exe?token=abc",
+	}
+	for _, u := range allowed {
+		if !isAllowedUpdateURL(u) {
+			t.Errorf("isAllowedUpdateURL(%q) = false, want true", u)
+		}
+	}
+
+	blocked := []string{
+		"",
+		"not a url",
+		"http://github.com/vianziro/Whatsapp-Dekstop/releases/latest/download/WhatsAppDesk.exe", // plain HTTP
+		"https://evil.example.com/WhatsAppDesk.exe",
+		"https://evil.example.com/vianziro/Whatsapp-Dekstop/releases/download/v1/evil.exe", // wrong host
+		"https://github.com.evil.example.com/vianziro/Whatsapp-Dekstop/releases/latest/download/x.exe",
+		"https://github.com/other-owner/Whatsapp-Dekstop/releases/latest/download/x.exe", // wrong owner
+		"https://github.com/vianziro/other-repo/releases/latest/download/x.exe",          // wrong repo
+		"https://github.com/vianziro/Whatsapp-Dekstop/blob/main/main.go",                 // not a release
+		"https://objects.githubusercontent.com/evil-payload",                             // CDN bypass attempt
+		"file:///tmp/evil.exe",
+		"javascript:alert(1)",
+	}
+	for _, u := range blocked {
+		if isAllowedUpdateURL(u) {
+			t.Errorf("isAllowedUpdateURL(%q) = true, want false", u)
+		}
+	}
+}
+
 func TestIsNewerVersion(t *testing.T) {
 	cases := []struct {
 		current string
