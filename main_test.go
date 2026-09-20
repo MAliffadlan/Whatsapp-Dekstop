@@ -1078,3 +1078,23 @@ func TestEscapeHtmlNeutralizesMarkup(t *testing.T) {
 		t.Fatalf("escapeHtml probe failed: %v\n%s", err, output)
 	}
 }
+
+// TestSpreadsheetPreviewSanitizesCellMarkup guards the spreadsheet preview.
+// The table comes from XLSX.utils.sheet_to_html, which escapes cell *text* but
+// writes the raw value into a data-v attribute: a cell whose value contains a
+// double quote closes that attribute and injects live markup, reachable from
+// any spreadsheet sent in a chat. The generated HTML must therefore never be
+// assigned to innerHTML unsanitized.
+func TestSpreadsheetPreviewSanitizesCellMarkup(t *testing.T) {
+	script := getInitScript("test-agent")
+
+	if !strings.Contains(script, "function sanitizeSheetHtml(html) {") {
+		t.Fatal("injected script is missing the sanitizeSheetHtml helper")
+	}
+	if !strings.Contains(script, "sanitizeSheetHtml(XLSX.utils.sheet_to_html(") {
+		t.Error("sheet_to_html output is not passed through sanitizeSheetHtml")
+	}
+	if strings.Contains(script, "var tableHtml = XLSX.utils.sheet_to_html(") {
+		t.Error("raw sheet_to_html output is still assigned to tableHtml")
+	}
+}

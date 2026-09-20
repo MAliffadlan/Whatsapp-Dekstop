@@ -379,6 +379,36 @@ func getInitScript(ua string) string {
 			});
 		}
 
+		// XLSX.utils.sheet_to_html escapes cell text but writes the raw value
+		// into a data-v attribute, so a cell whose value is '"><img src=x
+		// onerror=...>' closes the attribute early and injects live markup --
+		// reachable from any spreadsheet sent in a chat. Parse the generated
+		// markup inside an inert <template> (its content is a separate document
+		// fragment, so images do not load and handlers never fire) and drop
+		// every attribute we do not control, leaving cell content as text only.
+		function sanitizeSheetHtml(html) {
+			var tpl = document.createElement('template');
+			tpl.innerHTML = String(html == null ? '' : html);
+			// Elements a spreadsheet cell must never be able to introduce. The
+			// attribute pass below already strips on* handlers and src/href, but
+			// leaving an inert <img>/<iframe> behind would still be a rendering
+			// artifact, so remove them outright.
+			var banned = tpl.content.querySelectorAll('script,style,img,svg,iframe,frame,object,embed,link,meta,base,form,input,button,textarea,select,audio,video,source,track,math,template');
+			for (var b = banned.length - 1; b >= 0; b--) {
+				if (banned[b].parentNode) banned[b].parentNode.removeChild(banned[b]);
+			}
+			var nodes = tpl.content.querySelectorAll('*');
+			for (var i = 0; i < nodes.length; i++) {
+				var attrs = nodes[i].attributes;
+				for (var a = attrs.length - 1; a >= 0; a--) {
+					var name = attrs[a].name.toLowerCase();
+					if (name === 'id' || name === 'colspan' || name === 'rowspan') continue;
+					nodes[i].removeAttribute(attrs[a].name);
+				}
+			}
+			return tpl.innerHTML;
+		}
+
 		function isPlaceholderDownloadFilename(name) {
 			var clean = cleanDownloadFilename(name).toLowerCase();
 			if (!clean) return true;
@@ -1194,7 +1224,7 @@ func getInitScript(ua string) string {
 				}
 				var activeName = (activeSheetName && sheetNames.indexOf(activeSheetName) !== -1) ? activeSheetName : sheetNames[0];
 				var worksheet = workbook.Sheets[activeName];
-				var tableHtml = XLSX.utils.sheet_to_html(worksheet, { id: 'wa-xlsx-table' });
+				var tableHtml = sanitizeSheetHtml(XLSX.utils.sheet_to_html(worksheet, { id: 'wa-xlsx-table' }));
 
 				var tabsHtml = '';
 				if (sheetNames.length > 1) {
