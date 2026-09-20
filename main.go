@@ -1731,6 +1731,9 @@ func getInitScript(ua string) string {
 				'.privacy-mode [data-wa-privacy-chat-row="1"] ._ak8q,',
 				'.privacy-mode [data-wa-privacy-chat-row="1"] ._ak8k',
 				'{ filter: blur(6px) !important; transition: filter 0.15s ease-out !important; }',
+				'.privacy-mode [data-wa-privacy-archive-control="1"],',
+				'.privacy-mode [data-wa-privacy-archive-control="1"] *',
+				'{ filter: none !important; }',
 				'.privacy-mode.blur-avatars [data-wa-privacy-avatar="1"]',
 				'{ filter: blur(12px) !important; transition: filter 0.15s ease-out !important; }',
 				// Hovering any row or container restores its contents instantly.
@@ -1939,6 +1942,19 @@ func getInitScript(ua string) string {
 						row.setAttribute('data-wa-privacy-chat-row', '1');
 						var avatars = row.querySelectorAll(avatarSelector);
 						for (var a = 0; a < avatars.length; a++) avatars[a].setAttribute('data-wa-privacy-avatar', '1');
+					}
+				}
+				var archiveNodes = document.querySelectorAll('[data-icon*="archive" i], [data-testid*="archive" i], [aria-label*="archive" i]');
+				for (var n = 0; n < archiveNodes.length; n++) {
+					var control = archiveNodes[n];
+					while (control && control !== document.body) {
+						var controlText = (control.textContent || '').trim();
+						if (/^Archived\b/i.test(controlText)) {
+							control.removeAttribute('data-wa-privacy-chat-row');
+							control.setAttribute('data-wa-privacy-archive-control', '1');
+							break;
+						}
+						control = control.parentElement;
 					}
 				}
 			}

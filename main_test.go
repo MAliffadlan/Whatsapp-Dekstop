@@ -392,6 +392,8 @@ func TestPrivacyModeCoversArchivedChatsAndAllAvatarVariants(t *testing.T) {
 		"/^Archived\\b/i.test(rowText)",
 		"function isPrivacySidebarControl(node)",
 		"/^Archived\\b/i.test(text)",
+		"data-wa-privacy-archive-control",
+		"control.removeAttribute('data-wa-privacy-chat-row')",
 		".privacy-mode.blur-avatars #main header ._ak8h",
 		// Sparing timestamps in #side (including archived view)
 		"tagTimesIn(document.getElementById('side') || document.getElementById('pane-side'))",
