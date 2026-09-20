@@ -1744,19 +1744,10 @@ func getInitScript(ua string) string {
 				'.privacy-mode [data-testid="chat-list"] [role="listitem"] span,',
 				'.privacy-mode [data-testid="chat-list"] [data-testid="cell-frame-container"] span,',
 				'.privacy-mode [data-testid="chat-list"] div[tabindex="-1"] span,',
-				// Some Archived Chats layouts omit a stable chat-list ancestor.
-				'.privacy-mode [data-testid="cell-frame-container"] span,',
-				'.privacy-mode [role="row"] span,',
-				'.privacy-mode [role="listitem"] span,',
 				'.privacy-mode div[aria-label="Chat list"] span,',
-				'.privacy-mode [data-wa-privacy-archived-view="1"] [role="row"] span,',
-				'.privacy-mode [data-wa-privacy-archived-view="1"] [role="listitem"] span,',
-				'.privacy-mode [data-wa-privacy-archived-view="1"] [data-testid="cell-frame-container"] span,',
-				'.privacy-mode [data-wa-privacy-archived-view="1"] div[tabindex="-1"] span,',
 				'.privacy-mode [data-wa-privacy-archived-row="1"] span,',
-				'.privacy-mode [data-wa-privacy-archived-row="1"] img,',
-				'.privacy-mode [data-wa-privacy-archived-row="1"] image,',
-				'.privacy-mode [data-wa-privacy-archived-row="1"] svg',
+				'.privacy-mode [data-wa-privacy-archived-row="1"] ._ak8q,',
+				'.privacy-mode [data-wa-privacy-archived-row="1"] ._ak8k',
 				'{ filter: blur(6px) !important; transition: filter 0.15s ease-out !important; }',
 				// Hovering any row or container restores its contents instantly.
 				'.privacy-mode [data-wa-privacy-hover="1"] span,',
@@ -1826,6 +1817,15 @@ func getInitScript(ua string) string {
 				'.privacy-mode.blur-avatars div[aria-label="Chat list"] img,',
 				'.privacy-mode.blur-avatars div[aria-label="Chat list"] image,',
 				'.privacy-mode.blur-avatars div[aria-label="Chat list"] ._ak8h,',
+				'.privacy-mode.blur-avatars [data-wa-privacy-archived-row="1"] img,',
+				'.privacy-mode.blur-avatars [data-wa-privacy-archived-row="1"] image,',
+				'.privacy-mode.blur-avatars [data-wa-privacy-archived-row="1"] ._ak8h,',
+				'.privacy-mode.blur-avatars [data-wa-privacy-archived-row="1"] [data-testid*="avatar" i],',
+				'.privacy-mode.blur-avatars [data-wa-privacy-archived-row="1"] [data-testid="default-user"],',
+				'.privacy-mode.blur-avatars [data-wa-privacy-archived-row="1"] [data-icon="default-user"],',
+				'.privacy-mode.blur-avatars [data-wa-privacy-archived-row="1"] [data-icon="default-group"],',
+				'.privacy-mode.blur-avatars [data-wa-privacy-archived-row="1"] svg[viewBox="0 0 49 49"],',
+				'.privacy-mode.blur-avatars [data-wa-privacy-archived-row="1"] [role="button"] > div:first-child,',
 				'.privacy-mode.blur-avatars #main header img,',
 				'.privacy-mode.blur-avatars #main header image,',
 				'.privacy-mode.blur-avatars #main header ._ak8h,',
@@ -1907,12 +1907,9 @@ func getInitScript(ua string) string {
 				'.privacy-mode.blur-avatars div[aria-label="Chat list"] [role="row"]:hover img,',
 				'.privacy-mode.blur-avatars div[aria-label="Chat list"] [role="row"]:hover image,',
 				'.privacy-mode.blur-avatars div[aria-label="Chat list"] [role="row"]:hover ._ak8h,',
-				'.privacy-mode.blur-avatars div[aria-label*="Archived" i] [role="row"]:hover img,',
-				'.privacy-mode.blur-avatars div[aria-label*="Archived" i] [role="row"]:hover image,',
-				'.privacy-mode.blur-avatars div[aria-label*="Archived" i] [role="row"]:hover ._ak8h,',
-				'.privacy-mode.blur-avatars div[aria-label*="Archived" i] [role="listitem"]:hover img,',
-				'.privacy-mode.blur-avatars div[aria-label*="Archived" i] [role="listitem"]:hover image,',
-				'.privacy-mode.blur-avatars div[aria-label*="Archived" i] [role="listitem"]:hover ._ak8h,',
+				'.privacy-mode.blur-avatars [data-wa-privacy-archived-row="1"][data-wa-privacy-hover="1"] img,',
+				'.privacy-mode.blur-avatars [data-wa-privacy-archived-row="1"][data-wa-privacy-hover="1"] image,',
+				'.privacy-mode.blur-avatars [data-wa-privacy-archived-row="1"][data-wa-privacy-hover="1"] ._ak8h,',
 				'.privacy-mode.blur-avatars #main header:hover img,',
 				'.privacy-mode.blur-avatars #main header:hover image,',
 				'.privacy-mode.blur-avatars #main header:hover ._ak8h,',
@@ -1990,7 +1987,7 @@ func getInitScript(ua string) string {
 				clearPrivacyHoverRow();
 				activePrivacyHoverRow = row;
 				row.setAttribute('data-wa-privacy-hover', '1');
-				var revealTargets = row.querySelectorAll('span, ._ak8q, ._ak8k, img, image, [data-testid="default-user"], [data-icon="default-user"], [data-icon="default-group"]');
+				var revealTargets = row.querySelectorAll('span, ._ak8q, ._ak8k, img, image, ._ak8h, svg, [data-testid*="avatar" i], [data-testid="default-user"], [data-icon], [role="button"]');
 				for (var i = 0; i < revealTargets.length; i++) {
 					revealTargets[i].setAttribute('data-wa-privacy-reveal', '1');
 					revealTargets[i].style.setProperty('filter', 'none', 'important');
@@ -2006,19 +2003,26 @@ func getInitScript(ua string) string {
 				if (row) markPrivacyHoverRow(row);
 			}
 			function markArchivedPrivacyViews() {
+				var rowSelector = '[role="row"], [role="listitem"], [data-testid="cell-frame-container"], div[tabindex="-1"], div._ak8l';
+				var avatarSelector = 'img, image, ._ak8h, [data-testid*="avatar" i], [data-testid="default-user"], [data-icon="default-user"], [data-icon="default-group"], svg[viewBox="0 0 49 49"], [role="button"] > div:first-child';
+				function isArchivedChatRow(row) {
+					if (!row || !row.querySelectorAll) return false;
+					var text = (row.textContent || '').trim();
+					if (!text || /^Archived\b/i.test(text)) return false;
+					var hasChatText = row.querySelectorAll('span').length >= 2;
+					return hasChatText && (row.matches(rowSelector) || row.querySelector(avatarSelector));
+				}
 				function markRow(row) {
-					if (row && row.setAttribute) row.setAttribute('data-wa-privacy-archived-row', '1');
+					if (isArchivedChatRow(row)) row.setAttribute('data-wa-privacy-archived-row', '1');
 				}
 				function markRowsInView(view) {
-					var rows = view.querySelectorAll('[role="row"], [role="listitem"], [data-testid="cell-frame-container"], div[tabindex="-1"], div._ak8l');
+					var rows = view.querySelectorAll(rowSelector);
 					for (var r = 0; r < rows.length; r++) markRow(rows[r]);
-					var avatars = view.querySelectorAll('img, image');
+					var avatars = view.querySelectorAll(avatarSelector);
 					for (var a = 0; a < avatars.length; a++) {
 						var row = avatars[a].parentElement;
 						while (row && row !== view) {
-							var imageCount = row.querySelectorAll('img, image').length;
-							var textCount = row.querySelectorAll('span').length;
-							if (imageCount === 1 && textCount >= 2) {
+							if (isArchivedChatRow(row)) {
 								markRow(row);
 								break;
 							}
@@ -2026,6 +2030,23 @@ func getInitScript(ua string) string {
 						}
 					}
 				}
+				function scheduleArchivedPrivacyMark() {
+					if (!isPrivacyActive || scheduleArchivedPrivacyMark.pending) return;
+					scheduleArchivedPrivacyMark.pending = true;
+					setTimeout(function() {
+						scheduleArchivedPrivacyMark.pending = false;
+						if (isPrivacyActive) markArchivedPrivacyViews();
+					}, 50);
+				}
+				var archivedPrivacyObserver = new MutationObserver(scheduleArchivedPrivacyMark);
+				function observeArchivedPrivacyViews() {
+					var root = document.getElementById('app') || document.body;
+					if (root && !root.__waPrivacyArchivedObserver) {
+						archivedPrivacyObserver.observe(root, { childList: true, subtree: true });
+						root.__waPrivacyArchivedObserver = true;
+					}
+				}
+				observeArchivedPrivacyViews();
 				var anchors = document.querySelectorAll('[aria-label*="Archived" i], [data-testid*="archiv" i], [role="heading"], h1, h2, h3');
 				for (var i = 0; i < anchors.length; i++) {
 					var anchor = anchors[i];
@@ -2064,6 +2085,8 @@ func getInitScript(ua string) string {
 						if (h) h.appendChild(styleEl);
 					}
 					rootEl.classList.add('privacy-mode');
+					markArchivedPrivacyViews();
+					observeArchivedPrivacyViews();
 					if (!silent) showFloatingToast('🔒 Privacy Mode: Enabled');
 				} else {
 					rootEl.classList.remove('privacy-mode');

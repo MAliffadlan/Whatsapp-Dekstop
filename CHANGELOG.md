@@ -42,6 +42,7 @@ together, with the macOS and spreadsheet-preview follow-ups they needed to be me
 
 ### Fixed
 
+- Blur chat rows in the Archived Chats view when Privacy Mode is enabled (#50).
 - Linux: the StatusNotifierItem tray properties no longer abort the process on launch on
   desktops with a tray watcher (#48).
 - `wa_crash.log` rotates past 1 MB with a single backup, so a crash loop can no longer grow it
