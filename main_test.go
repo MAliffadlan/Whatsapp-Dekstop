@@ -341,6 +341,9 @@ func TestPrivacyModeUsesVisualBlurWithChatListHoverUnblur(t *testing.T) {
 		"function privacyChatRowFromTarget(target)",
 		"function markPrivacyHoverRow(row)",
 		"function updatePrivacyHoverFromTarget(target)",
+		"data-wa-privacy-chat-row",
+		"data-wa-privacy-avatar",
+		"function markPrivacyChatRows()",
 		"setProperty('filter', 'none', 'important')",
 		"div._ak8l",
 	} {
@@ -357,8 +360,8 @@ func TestPrivacyModeUsesVisualBlurWithChatListHoverUnblur(t *testing.T) {
 	if strings.Contains(script, "#pane-side [role=\"row\"]:hover span") {
 		t.Fatal("chat-list privacy reveal must not depend on broad row hover selectors")
 	}
-	if !strings.Contains(script, "#pane-side [role=\"row\"] span,") {
-		t.Fatal("chat-list timestamps must be included in the privacy blur layer")
+	if !strings.Contains(script, "[data-wa-privacy-chat-row=\"1\"] span,") {
+		t.Fatal("chat-list timestamps must be included in the marked chat-row blur layer")
 	}
 	if !strings.Contains(script, "row.querySelectorAll('span, ._ak8q") {
 		t.Fatal("hover reveal must include timestamp spans")
@@ -378,23 +381,12 @@ func TestPrivacyModeCopyMatchesTimestampBlurBehavior(t *testing.T) {
 func TestPrivacyModeCoversArchivedChatsAndAllAvatarVariants(t *testing.T) {
 	script := getInitScript("test-agent")
 	checks := []string{
-		// Sidebar & Archived chats text protection
-		"#side [role=\"row\"] span",
-		"#side [role=\"listitem\"] span",
-		"div[aria-label*=\"Archived\" i]",
-		// Avatar blur covers images, svg images, avatar container _ak8h, and default user SVGs
-		".privacy-mode.blur-avatars #side img",
-		".privacy-mode.blur-avatars #side image",
-		".privacy-mode.blur-avatars #side ._ak8h",
-		".privacy-mode.blur-avatars #side [data-testid=\"default-user\"]",
-		".privacy-mode.blur-avatars #side svg[viewBox=\"0 0 49 49\"]",
-		".privacy-mode.blur-avatars #side div.x78zum5 > div.x6s0dn4 > div",
+		// Sidebar and archived rows are marked only when they contain chat text and an avatar.
+		"[data-wa-privacy-chat-row=\"1\"] span",
+		"var avatarSelector = 'img, image, ._ak8h",
+		"[style*=\"background-image\"]",
+		"[data-wa-privacy-avatar=\"1\"]",
 		".privacy-mode.blur-avatars #main header ._ak8h",
-		// Symmetrical hover unblur for row peek and direct avatar hover
-		"#side [role=\"row\"]:hover ._ak8h",
-		"#side [role=\"row\"]:hover image",
-		"#side ._ak8h:hover",
-		"#side ._ak8h:hover *",
 		// Sparing timestamps in #side (including archived view)
 		"tagTimesIn(document.getElementById('side') || document.getElementById('pane-side'))",
 	}
