@@ -399,6 +399,8 @@ func TestPrivacyModeCoversArchivedChatsAndAllAvatarVariants(t *testing.T) {
 		"function forceArchivedControlVisible()",
 		"control.getBoundingClientRect",
 		"control.style.setProperty('filter', 'none', 'important')",
+		"var archiveIcons = document.querySelectorAll('#side [data-icon*=\"archive\" i]",
+		"icon.style.setProperty('filter', 'none', 'important')",
 		".privacy-mode.blur-avatars #main header ._ak8h",
 		// Sparing timestamps in #side (including archived view)
 		"tagTimesIn(document.getElementById('side') || document.getElementById('pane-side'))",

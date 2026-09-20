@@ -1989,6 +1989,20 @@ func getInitScript(ua string) string {
 						break;
 					}
 				}
+				var archiveIcons = document.querySelectorAll('#side [data-icon*="archive" i], #side [data-testid*="archive" i], #side svg, #pane-side [data-icon*="archive" i], #pane-side [data-testid*="archive" i], #pane-side svg');
+				for (var a = 0; a < archiveIcons.length; a++) {
+					var icon = archiveIcons[a];
+					var iconRow = icon.closest && icon.closest('[role="row"], [role="listitem"], [data-testid="cell-frame-container"], div[tabindex="-1"], div._ak8l');
+					if (iconRow && /^Archived\b/i.test((iconRow.textContent || '').trim())) {
+						iconRow.removeAttribute('data-wa-privacy-chat-row');
+						iconRow.setAttribute('data-wa-privacy-archive-control', '1');
+						iconRow.style.setProperty('filter', 'none', 'important');
+					}
+					if (icon.matches && (icon.matches('[data-icon*="archive" i]') || icon.matches('[data-testid*="archive" i]'))) {
+						icon.style.setProperty('filter', 'none', 'important');
+						icon.querySelectorAll('*').forEach(function(child) { child.style.setProperty('filter', 'none', 'important'); });
+					}
+				}
 			}
 			function isPrivacySidebarControl(node) {
 				if (!node || !node.matches) return false;
