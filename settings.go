@@ -315,7 +315,11 @@ func validateDownloadDir(dir string) error {
 	}
 	abs = resolveForValidation(abs)
 	for _, blocked := range blockedDownloadDirPrefixes() {
-		blocked = filepath.Clean(blocked)
+		// Resolve the blocklist entry the same way as the candidate. On macOS
+		// /etc and /var are symlinks into /private, so comparing a resolved
+		// candidate against an unresolved entry never matches and the whole
+		// check silently no-ops (validateDownloadDir("/etc") returned nil).
+		blocked = resolveForValidation(filepath.Clean(blocked))
 		if abs == blocked || strings.HasPrefix(abs, blocked+string(os.PathSeparator)) {
 			return fmt.Errorf("download directory must not point at %s", blocked)
 		}
@@ -356,7 +360,11 @@ func isAllowedOpenPath(filePath string) bool {
 	}
 	previewDir := filepath.Join(os.TempDir(), "WhatsAppDeskPreview")
 	if prevAbs, err := filepath.Abs(previewDir); err == nil {
-		if pathWithinDir(filepath.Clean(abs), filepath.Clean(prevAbs)) {
+		// Resolve prevAbs too: os.TempDir() is /var/... on macOS, which
+		// resolves to /private/var/..., so an unresolved prefix can never
+		// match the already-resolved candidate and preview files would always
+		// be refused.
+		if pathWithinDir(abs, resolveForValidation(prevAbs)) {
 			return true
 		}
 	}
