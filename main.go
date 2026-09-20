@@ -2071,7 +2071,16 @@ func getInitScript(ua string) string {
 			document.addEventListener('mouseout', function(e) {
 				var row = privacyChatRowFromTarget(e.target);
 				if (row && (!e.relatedTarget || !row.contains(e.relatedTarget))) clearPrivacyHoverRow();
+				if (privacyChatListRootFromTarget(e.target)) setTimeout(forceArchivedControlVisible, 0);
 			}, true);
+			var privacySidebarObserver = new MutationObserver(function() {
+				if (isPrivacyActive) forceArchivedControlVisible();
+			});
+			function observePrivacySidebar() {
+				var side = document.getElementById('side') || document.getElementById('pane-side');
+				if (side) privacySidebarObserver.observe(side, { childList: true, subtree: true });
+			}
+			observePrivacySidebar();
 
 			function applyPrivacyMode(active, silent) {
 				isPrivacyActive = !!active;
@@ -2088,6 +2097,7 @@ func getInitScript(ua string) string {
 					rootEl.classList.add('privacy-mode');
 					markPrivacyChatRows();
 					forceArchivedControlVisible();
+					observePrivacySidebar();
 					if (!silent) showFloatingToast('🔒 Privacy Mode: Enabled');
 				} else {
 					rootEl.classList.remove('privacy-mode');

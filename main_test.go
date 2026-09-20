@@ -401,6 +401,9 @@ func TestPrivacyModeCoversArchivedChatsAndAllAvatarVariants(t *testing.T) {
 		"control.style.setProperty('filter', 'none', 'important')",
 		"var archiveIcons = document.querySelectorAll('#side [data-icon*=\"archive\" i]",
 		"icon.style.setProperty('filter', 'none', 'important')",
+		"setTimeout(forceArchivedControlVisible, 0)",
+		"new MutationObserver(function()",
+		"observePrivacySidebar()",
 		".privacy-mode.blur-avatars #main header ._ak8h",
 		// Sparing timestamps in #side (including archived view)
 		"tagTimesIn(document.getElementById('side') || document.getElementById('pane-side'))",
