@@ -1932,7 +1932,8 @@ func getInitScript(ua string) string {
 					var rows = roots[r].querySelectorAll(rowSelector);
 					for (var i = 0; i < rows.length; i++) {
 						var row = rows[i];
-						if (row.querySelectorAll('span').length < 2 || !row.querySelector(avatarSelector)) continue;
+						if (row.querySelectorAll('span').length < 2 &&
+							!row.matches('[data-testid="cell-frame-container"], div._ak8l')) continue;
 						row.setAttribute('data-wa-privacy-chat-row', '1');
 						var avatars = row.querySelectorAll(avatarSelector);
 						for (var a = 0; a < avatars.length; a++) avatars[a].setAttribute('data-wa-privacy-avatar', '1');
