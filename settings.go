@@ -236,7 +236,12 @@ func fileExistsInDownloadDir(filename string) bool {
 // user download folder and are rejected with a clear error instead of a
 // confusing MkdirAll failure.
 func blockedDownloadDirPrefixes() []string {
-	prefixes := []string{"/dev", "/proc", "/sys", "/etc", "/bin", "/sbin", "/usr", "/boot", "/root"}
+	// NOTE: /root is deliberately NOT blanket-blocked. When the app runs as
+	// root, HOME=/root and the default download folder lives under it; the
+	// autostart/systemd locations there are still covered by the home-based
+	// entries below. A non-root user pointing at /root/... fails on
+	// filesystem permissions anyway.
+	prefixes := []string{"/dev", "/proc", "/sys", "/etc", "/bin", "/sbin", "/usr", "/boot"}
 	if home, err := os.UserHomeDir(); err == nil && strings.TrimSpace(home) != "" {
 		home = filepath.Clean(home)
 		prefixes = append(prefixes,

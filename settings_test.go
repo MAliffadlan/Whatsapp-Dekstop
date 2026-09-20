@@ -97,7 +97,9 @@ func TestValidateDownloadDirRejectsSensitive(t *testing.T) {
 		"/sys",
 		"/etc",
 		"/etc/cron.d",
-		"/root",
+		// NOTE: plain /root is intentionally usable (see
+		// TestValidateDownloadDirRootUser); only autostart/systemd below a
+		// home dir are blocked.
 		filepath.Join(home, ".config", "autostart"),
 		filepath.Join(home, ".config", "autostart", "2026-01"),
 		filepath.Join(home, ".local", "share", "applications"),
@@ -136,6 +138,21 @@ func TestValidateDownloadDirAcceptsNormal(t *testing.T) {
 		if err := validateDownloadDir(dir); err != nil {
 			t.Errorf("validateDownloadDir(%q) = %v, want nil", dir, err)
 		}
+	}
+}
+
+func TestValidateDownloadDirRootUser(t *testing.T) {
+	// Running as root keeps HOME=/root, so the default download folder must
+	// stay usable even though system prefixes are blocked. Autostart under
+	// /root must still be rejected.
+	t.Setenv("HOME", "/root")
+	t.Setenv("XDG_CONFIG_HOME", "/root/.config")
+
+	if err := validateDownloadDir("/root/Downloads/WhatsApp Downloads"); err != nil {
+		t.Errorf("validateDownloadDir(root default) = %v, want nil", err)
+	}
+	if err := validateDownloadDir("/root/.config/autostart"); err == nil {
+		t.Error("validateDownloadDir(/root/.config/autostart) = nil, want error")
 	}
 }
 
