@@ -1729,12 +1729,27 @@ func getInitScript(ua string) string {
 				// as well as #pane-side and modern aria/data-testid containers.
 				'.privacy-mode [data-wa-privacy-chat-row="1"] span,',
 				'.privacy-mode [data-wa-privacy-chat-row="1"] ._ak8q,',
-				'.privacy-mode [data-wa-privacy-chat-row="1"] ._ak8k',
+				'.privacy-mode [data-wa-privacy-chat-row="1"] ._ak8k,',
+				'.privacy-mode [data-wa-privacy-archived-row="1"] span,',
+				'.privacy-mode [data-wa-privacy-archived-row="1"] ._ak8q,',
+				'.privacy-mode [data-wa-privacy-archived-row="1"] ._ak8k',
 				'{ filter: blur(6px) !important; transition: filter 0.15s ease-out !important; }',
+				// The Archived view explanation is UI guidance, not private chat data.
+				'.privacy-mode [data-wa-privacy-archived-info="1"],',
+				'.privacy-mode [data-wa-privacy-archived-info="1"] *',
+				'{ filter: none !important; }',
 				'.privacy-mode [data-wa-privacy-archive-control="1"],',
 				'.privacy-mode [data-wa-privacy-archive-control="1"] *',
 				'{ filter: none !important; }',
 				'.privacy-mode.blur-avatars [data-wa-privacy-avatar="1"]',
+				'{ filter: blur(12px) !important; transition: filter 0.15s ease-out !important; }',
+				'.privacy-mode.blur-avatars [data-wa-privacy-archived-row="1"] img,',
+				'.privacy-mode.blur-avatars [data-wa-privacy-archived-row="1"] image,',
+				'.privacy-mode.blur-avatars [data-wa-privacy-archived-row="1"] ._ak8h,',
+				'.privacy-mode.blur-avatars [data-wa-privacy-archived-row="1"] [data-testid*="avatar" i],',
+				'.privacy-mode.blur-avatars [data-wa-privacy-archived-row="1"] [data-testid="default-user"],',
+				'.privacy-mode.blur-avatars [data-wa-privacy-archived-row="1"] [data-icon],',
+				'.privacy-mode.blur-avatars [data-wa-privacy-archived-row="1"] svg[viewBox="0 0 49 49"]',
 				'{ filter: blur(12px) !important; transition: filter 0.15s ease-out !important; }',
 				// Hovering any row or container restores its contents instantly.
 				'.privacy-mode [data-wa-privacy-hover="1"] span,',
@@ -2014,7 +2029,9 @@ func getInitScript(ua string) string {
 				while (node && node !== document.body) {
 					if (node.id === 'pane-side' || node.id === 'side' ||
 						node.getAttribute('data-testid') === 'chat-list' ||
-						node.getAttribute('aria-label') === 'Chat list') return node;
+						node.getAttribute('aria-label') === 'Chat list' ||
+						node.getAttribute('data-wa-privacy-archived-view') === '1' ||
+						/archived/i.test(node.getAttribute('aria-label') || '')) return node;
 					node = node.parentElement;
 				}
 				return null;
@@ -2023,6 +2040,7 @@ func getInitScript(ua string) string {
 				var listRoot = privacyChatListRootFromTarget(target);
 				var node = target && target.nodeType === 1 ? target : null;
 				while (node && node !== listRoot && node !== document.body) {
+					if (node.getAttribute && node.getAttribute('data-wa-privacy-archived-row') === '1') return node;
 					if (isPrivacySidebarControl(node)) return null;
 					if (node.matches && (node.matches('[role="row"]') ||
 						node.matches('[role="listitem"]') ||
@@ -2066,6 +2084,68 @@ func getInitScript(ua string) string {
 				var row = privacyChatRowFromTarget(target);
 				if (row) markPrivacyHoverRow(row);
 			}
+			function markArchivedPrivacyViews() {
+				var rowSelector = '[role="row"], [role="listitem"], [data-testid="cell-frame-container"], div[tabindex="-1"], div._ak8l';
+				var avatarSelector = 'img, image, ._ak8h, [data-testid*="avatar" i], [data-testid="default-user"], [data-icon="default-user"], [data-icon="default-group"], svg[viewBox="0 0 49 49"], [role="button"] > div:first-child';
+				function isArchivedChatRow(row) {
+					if (!row || !row.querySelectorAll) return false;
+					var text = (row.textContent || '').trim();
+					if (!text || /^Archived\b/i.test(text)) return false;
+					var hasChatText = row.querySelectorAll('span').length >= 2;
+					return hasChatText && (row.matches(rowSelector) || row.querySelector(avatarSelector));
+				}
+				function markRow(row) {
+					if (!isArchivedChatRow(row)) return;
+					row.setAttribute('data-wa-privacy-archived-row', '1');
+					var avatars = row.querySelectorAll(avatarSelector);
+					for (var a = 0; a < avatars.length; a++) avatars[a].setAttribute('data-wa-privacy-avatar', '1');
+				}
+				function markRowsInView(view) {
+					var rows = view.querySelectorAll(rowSelector);
+					for (var r = 0; r < rows.length; r++) markRow(rows[r]);
+					var avatars = view.querySelectorAll(avatarSelector);
+					for (var a = 0; a < avatars.length; a++) {
+						var row = avatars[a].parentElement;
+						while (row && row !== view) {
+							if (isArchivedChatRow(row)) {
+								markRow(row);
+								break;
+							}
+							row = row.parentElement;
+						}
+					}
+				}
+				function markArchivedInfo(view) {
+					var candidates = view.querySelectorAll('span, p, div');
+					for (var i = 0; i < candidates.length; i++) {
+						var candidate = candidates[i];
+						var text = (candidate.textContent || '').trim();
+						if (text.length < 40 || text.length > 240) continue;
+						if (/^These chats stay archived when new messages are received/i.test(text) ||
+							/^To change this experience, go to settings > chats on your phone/i.test(text)) {
+							candidate.setAttribute('data-wa-privacy-archived-info', '1');
+						}
+					}
+				}
+				var anchors = document.querySelectorAll('[aria-label*="Archived" i], [data-testid*="archiv" i], [role="heading"], h1, h2, h3');
+				for (var i = 0; i < anchors.length; i++) {
+					var anchor = anchors[i];
+					var label = (anchor.getAttribute('aria-label') || '').trim();
+					var text = (anchor.textContent || '').trim();
+					if (!/archived/i.test(label) && !/^Archived$/i.test(text)) continue;
+					var view = anchor;
+					for (var depth = 0; view && depth < 8; depth++, view = view.parentElement) {
+						var hasChatRows = view.querySelector && view.querySelector(rowSelector);
+						var hasChatVisuals = view.querySelectorAll && view.querySelectorAll('img, image').length >= 2 && view.querySelectorAll('span').length >= 2;
+						if (hasChatRows || hasChatVisuals) {
+							view.setAttribute('data-wa-privacy-archived-view', '1');
+							markArchivedInfo(view);
+							markRowsInView(view);
+							break;
+						}
+					}
+				}
+			}
 			document.addEventListener('mouseover', function(e) { updatePrivacyHoverFromTarget(e.target); }, true);
 			document.addEventListener('mousemove', function(e) { updatePrivacyHoverFromTarget(e.target); }, true);
 			document.addEventListener('mouseout', function(e) {
@@ -2074,7 +2154,10 @@ func getInitScript(ua string) string {
 				if (privacyChatListRootFromTarget(e.target)) setTimeout(forceArchivedControlVisible, 0);
 			}, true);
 			var privacySidebarObserver = new MutationObserver(function() {
-				if (isPrivacyActive) forceArchivedControlVisible();
+				if (isPrivacyActive) {
+					markArchivedPrivacyViews();
+					forceArchivedControlVisible();
+				}
 			});
 			function observePrivacySidebar() {
 				var side = document.getElementById('side') || document.getElementById('pane-side');
@@ -2096,6 +2179,7 @@ func getInitScript(ua string) string {
 					}
 					rootEl.classList.add('privacy-mode');
 					markPrivacyChatRows();
+					markArchivedPrivacyViews();
 					forceArchivedControlVisible();
 					observePrivacySidebar();
 					if (!silent) showFloatingToast('🔒 Privacy Mode: Enabled');
@@ -2146,6 +2230,7 @@ func getInitScript(ua string) string {
 			setInterval(function() {
 				if (!isPrivacyActive || shouldPauseBackgroundWork()) return;
 				markPrivacyChatRows();
+				markArchivedPrivacyViews();
 				forceArchivedControlVisible();
 				tagTimesIn(document.getElementById('main'));
 				tagTimesIn(document.getElementById('side') || document.getElementById('pane-side'));
