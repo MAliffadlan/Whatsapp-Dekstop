@@ -393,6 +393,8 @@ func TestPrivacyModeCoversArchivedChatsAndAllAvatarVariants(t *testing.T) {
 		"[data-wa-privacy-avatar=\"1\"]",
 		"data-wa-privacy-archived-info",
 		"function markArchivedInfo(view)",
+		"replace(/\\s+/g, ' ')",
+		"markArchivedInfo(document.body)",
 		"These chats stay archived when new messages are received",
 		"function isArchivedChatRow(row)",
 		"/^Archived\\b/i.test(rowText)",

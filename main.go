@@ -2119,7 +2119,7 @@ func getInitScript(ua string) string {
 					var candidates = view.querySelectorAll('span, p, div');
 					for (var i = 0; i < candidates.length; i++) {
 						var candidate = candidates[i];
-						var text = (candidate.textContent || '').trim();
+						var text = (candidate.textContent || '').replace(/\s+/g, ' ').trim();
 						if (text.length < 40 || text.length > 240) continue;
 						if (/^These chats stay archived when new messages are received/i.test(text) ||
 							/^To change this experience, go to settings > chats on your phone/i.test(text)) {
@@ -2127,6 +2127,9 @@ func getInitScript(ua string) string {
 						}
 					}
 				}
+				// The Archived title is not consistently exposed as a heading or aria label.
+				// Find the guidance block directly so it stays visible in every layout.
+				markArchivedInfo(document.body);
 				var anchors = document.querySelectorAll('[aria-label*="Archived" i], [data-testid*="archiv" i], [role="heading"], h1, h2, h3');
 				for (var i = 0; i < anchors.length; i++) {
 					var anchor = anchors[i];
