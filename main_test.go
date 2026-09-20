@@ -393,8 +393,7 @@ func TestPrivacyModeCoversArchivedChatsAndAllAvatarVariants(t *testing.T) {
 		"[data-wa-privacy-archived-row=\"1\"] span",
 		"var avatarSelector = 'img, image, ._ak8h",
 		"[data-testid*=\"avatar\" i]",
-		"[role=\"button\"] > div:first-child",
-		"[style*=\"background-image\"]",
+		"svg[viewBox=\"0 0 49 49\"]'",
 		"[data-wa-privacy-avatar=\"1\"]",
 		"data-wa-privacy-archived-info",
 		"function markArchivedInfo(view)",
@@ -426,6 +425,15 @@ func TestPrivacyModeCoversArchivedChatsAndAllAvatarVariants(t *testing.T) {
 		if !strings.Contains(script, want) {
 			t.Errorf("privacy rules missing required coverage for %q", want)
 		}
+	}
+	if strings.Contains(script, "[role=\"button\"] > div:first-child") {
+		t.Fatal("avatar privacy must not blur generic button child containers")
+	}
+	if strings.Contains(script, "[style*=\"background-image\"]") {
+		t.Fatal("avatar privacy must not blur generic background-image containers")
+	}
+	if strings.Contains(script, "div.x78zum5 > div.x6s0dn4 > div") {
+		t.Fatal("avatar privacy must not blur unstable layout containers")
 	}
 }
 

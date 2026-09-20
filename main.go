@@ -1805,9 +1805,6 @@ func getInitScript(ua string) string {
 				'.privacy-mode.blur-avatars #side [data-icon="default-group"],',
 				'.privacy-mode.blur-avatars #side [data-icon="community-outline"],',
 				'.privacy-mode.blur-avatars #side svg[viewBox="0 0 49 49"],',
-				'.privacy-mode.blur-avatars #side [role="row"] [role="button"] > div:first-child,',
-				'.privacy-mode.blur-avatars #side [role="listitem"] [role="button"] > div:first-child,',
-				'.privacy-mode.blur-avatars #side div.x78zum5 > div.x6s0dn4 > div,',
 				'.privacy-mode.blur-avatars #pane-side img,',
 				'.privacy-mode.blur-avatars #pane-side image,',
 				'.privacy-mode.blur-avatars #pane-side ._ak8h,',
@@ -1846,14 +1843,11 @@ func getInitScript(ua string) string {
 				'.privacy-mode.blur-avatars #side [role="row"]:hover [data-testid="default-user"],',
 				'.privacy-mode.blur-avatars #side [role="row"]:hover [data-icon="default-user"],',
 				'.privacy-mode.blur-avatars #side [role="row"]:hover svg[viewBox="0 0 49 49"],',
-				'.privacy-mode.blur-avatars #side [role="row"]:hover [role="button"] > div:first-child,',
-				'.privacy-mode.blur-avatars #side [role="row"]:hover div.x78zum5 > div.x6s0dn4 > div,',
 				'.privacy-mode.blur-avatars #side [role="listitem"]:hover img,',
 				'.privacy-mode.blur-avatars #side [role="listitem"]:hover image,',
 				'.privacy-mode.blur-avatars #side [role="listitem"]:hover ._ak8h,',
 				'.privacy-mode.blur-avatars #side [role="listitem"]:hover [data-testid="default-user"],',
 				'.privacy-mode.blur-avatars #side [role="listitem"]:hover svg[viewBox="0 0 49 49"],',
-				'.privacy-mode.blur-avatars #side [role="listitem"]:hover [role="button"] > div:first-child,',
 				'.privacy-mode.blur-avatars #side [data-testid="cell-frame-container"]:hover img,',
 				'.privacy-mode.blur-avatars #side [data-testid="cell-frame-container"]:hover image,',
 				'.privacy-mode.blur-avatars #side [data-testid="cell-frame-container"]:hover ._ak8h,',
@@ -1945,7 +1939,7 @@ func getInitScript(ua string) string {
 			function markPrivacyChatRows() {
 				var roots = document.querySelectorAll('#side, #pane-side, [data-testid="chat-list"], div[aria-label="Chat list"]');
 				var rowSelector = '[role="row"], [role="listitem"], [data-testid="cell-frame-container"], div._ak8l';
-				var avatarSelector = 'img, image, ._ak8h, [data-testid="default-user"], [data-testid*="avatar" i], [data-icon="default-user"], [data-icon="default-group"], svg[viewBox="0 0 49 49"], [style*="background-image"], [role="button"] > div:first-child, div.x78zum5 > div.x6s0dn4 > div';
+				var avatarSelector = 'img, image, ._ak8h, [data-testid="default-user"], [data-testid*="avatar" i], [data-icon="default-user"], [data-icon="default-group"], svg[viewBox="0 0 49 49"]';
 				for (var r = 0; r < roots.length; r++) {
 					var rows = roots[r].querySelectorAll(rowSelector);
 					for (var i = 0; i < rows.length; i++) {
@@ -2097,7 +2091,7 @@ func getInitScript(ua string) string {
 			}
 			function markArchivedPrivacyViews() {
 				var rowSelector = '[role="row"], [role="listitem"], [data-testid="cell-frame-container"], div[tabindex="-1"], div._ak8l';
-				var avatarSelector = 'img, image, ._ak8h, [data-testid*="avatar" i], [data-testid="default-user"], [data-icon="default-user"], [data-icon="default-group"], svg[viewBox="0 0 49 49"], [role="button"] > div:first-child';
+				var avatarSelector = 'img, image, ._ak8h, [data-testid*="avatar" i], [data-testid="default-user"], [data-icon="default-user"], [data-icon="default-group"], svg[viewBox="0 0 49 49"]';
 				function isArchivedChatRow(row) {
 					if (!row || !row.querySelectorAll) return false;
 					var text = (row.textContent || '').trim();
