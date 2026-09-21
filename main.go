@@ -1936,6 +1936,29 @@ func getInitScript(ua string) string {
 			].join('\n');
 
 			var activePrivacyHoverRow = null;
+			function markPrivacyAvatarTargets(row, avatarSelector) {
+				var avatars = row.querySelectorAll(avatarSelector);
+				for (var a = 0; a < avatars.length; a++) avatars[a].setAttribute('data-wa-privacy-avatar', '1');
+				if (avatars.length) return;
+				// WhatsApp renders initials as text inside a circular slot instead of an img.
+				// Find only a small, square element at the row's leading edge so the
+				// fallback cannot accidentally mark the whole row as an avatar.
+				var rowRect = row.getBoundingClientRect ? row.getBoundingClientRect() : null;
+				if (!rowRect || rowRect.width <= 0 || rowRect.height <= 0) return;
+				var initials = row.querySelectorAll('span, div');
+				for (var i = 0; i < initials.length; i++) {
+					var text = (initials[i].textContent || '').trim();
+					if (!/^[A-Za-z0-9]{1,3}$/.test(text)) continue;
+					var candidate = initials[i];
+					for (var depth = 0; candidate && candidate !== row && depth < 5; depth++, candidate = candidate.parentElement) {
+						var rect = candidate.getBoundingClientRect ? candidate.getBoundingClientRect() : null;
+						if (!rect || rect.width < 28 || rect.height < 28 || rect.width > 96 || rect.height > 96) continue;
+						if (Math.abs(rect.width - rect.height) > 18 || rect.left > rowRect.left + 96 || rect.top > rowRect.top + 24) continue;
+						candidate.setAttribute('data-wa-privacy-avatar', '1');
+						return;
+					}
+				}
+			}
 			function markPrivacyChatRows() {
 				var roots = document.querySelectorAll('#side, #pane-side, [data-testid="chat-list"], div[aria-label="Chat list"]');
 				var rowSelector = '[role="row"], [role="listitem"], [data-testid="cell-frame-container"], div._ak8l';
@@ -1949,8 +1972,7 @@ func getInitScript(ua string) string {
 						if (row.querySelectorAll('span').length < 2 &&
 							!row.matches('[data-testid="cell-frame-container"], div._ak8l')) continue;
 						row.setAttribute('data-wa-privacy-chat-row', '1');
-						var avatars = row.querySelectorAll(avatarSelector);
-						for (var a = 0; a < avatars.length; a++) avatars[a].setAttribute('data-wa-privacy-avatar', '1');
+						markPrivacyAvatarTargets(row, avatarSelector);
 					}
 				}
 				var archivedLabels = document.querySelectorAll('#side span, #side div, #pane-side span, #pane-side div');
@@ -2055,9 +2077,10 @@ func getInitScript(ua string) string {
 				return false;
 			}
 			function clearPrivacyHoverRow() {
-				if (!activePrivacyHoverRow) return;
-				activePrivacyHoverRow.removeAttribute('data-wa-privacy-hover');
-				var revealed = activePrivacyHoverRow.querySelectorAll('[data-wa-privacy-reveal="1"]');
+				if (activePrivacyHoverRow) activePrivacyHoverRow.removeAttribute('data-wa-privacy-hover');
+				// Clear stale reveal markers globally. DOM recycling can remove a row
+				// without dispatching a matching mouseout, leaving other avatars open.
+				var revealed = document.querySelectorAll('[data-wa-privacy-reveal="1"]');
 				for (var i = 0; i < revealed.length; i++) {
 					revealed[i].removeAttribute('data-wa-privacy-reveal');
 					if (!isPrivacyArchivedInfo(revealed[i]) && revealed[i].getAttribute('data-wa-privacy-filter-overridden') === '1') {
@@ -2102,8 +2125,7 @@ func getInitScript(ua string) string {
 				function markRow(row) {
 					if (!isArchivedChatRow(row)) return;
 					row.setAttribute('data-wa-privacy-archived-row', '1');
-					var avatars = row.querySelectorAll(avatarSelector);
-					for (var a = 0; a < avatars.length; a++) avatars[a].setAttribute('data-wa-privacy-avatar', '1');
+					markPrivacyAvatarTargets(row, avatarSelector);
 				}
 				function markRowsInView(view) {
 					var rows = view.querySelectorAll(rowSelector);
