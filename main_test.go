@@ -432,8 +432,8 @@ func TestPrivacyModeCoversArchivedChatsAndAllAvatarVariants(t *testing.T) {
 	if strings.Contains(script, "[role=\"button\"] > div:first-child") {
 		t.Fatal("avatar privacy must not blur generic button child containers")
 	}
-	if strings.Contains(script, "[style*=\"background-image\"]") {
-		t.Fatal("avatar privacy must not blur generic background-image containers")
+	if strings.Contains(script, "var avatarSelector = 'img, image, ._ak8h, [data-testid=\"default-user\"], [data-testid*=\"avatar\" i], [data-icon=\"default-user\"], [data-icon=\"default-group\"], svg[viewBox=\"0 0 49 49\"], [style*=\"background-image\"]") {
+		t.Fatal("avatar privacy must not use a broad background-image selector")
 	}
 	if strings.Contains(script, "div.x78zum5 > div.x6s0dn4 > div") {
 		t.Fatal("avatar privacy must not blur unstable layout containers")

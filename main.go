@@ -1940,11 +1940,22 @@ func getInitScript(ua string) string {
 				var avatars = row.querySelectorAll(avatarSelector);
 				for (var a = 0; a < avatars.length; a++) avatars[a].setAttribute('data-wa-privacy-avatar', '1');
 				if (avatars.length) return;
-				// WhatsApp renders initials as text inside a circular slot instead of an img.
-				// Find only a small, square element at the row's leading edge so the
-				// fallback cannot accidentally mark the whole row as an avatar.
+				// Some profile photos are CSS background images instead of img nodes.
+				// Restrict the fallback to a small square at the row's leading edge;
+				// never select a generic background-image container.
 				var rowRect = row.getBoundingClientRect ? row.getBoundingClientRect() : null;
 				if (!rowRect || rowRect.width <= 0 || rowRect.height <= 0) return;
+				var visualCandidates = row.querySelectorAll('[style*="background-image"], [role="img"]');
+				for (var v = 0; v < visualCandidates.length; v++) {
+					var visual = visualCandidates[v];
+					var visualRect = visual.getBoundingClientRect ? visual.getBoundingClientRect() : null;
+					if (!visualRect || visualRect.width < 28 || visualRect.height < 28 || visualRect.width > 96 || visualRect.height > 96) continue;
+					if (Math.abs(visualRect.width - visualRect.height) > 18 || visualRect.left > rowRect.left + 96 || visualRect.top > rowRect.top + 24) continue;
+					visual.setAttribute('data-wa-privacy-avatar', '1');
+					return;
+				}
+				// WhatsApp renders initials as text inside a circular slot instead of an img.
+				// The same geometry guard prevents the fallback from marking the row.
 				var initials = row.querySelectorAll('span, div');
 				for (var i = 0; i < initials.length; i++) {
 					var text = (initials[i].textContent || '').trim();
