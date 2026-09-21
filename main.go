@@ -1836,73 +1836,8 @@ func getInitScript(ua string) string {
 				'.privacy-mode.blur-avatars div[role="dialog"] ._ak8h,',
 				'.privacy-mode.blur-avatars div[role="dialog"] img',
 				'{ filter: blur(12px) !important; transition: filter 0.15s ease-out !important; }',
-				// Symmetrical unblur on hovering row, item, or the avatar directly.
-				'.privacy-mode.blur-avatars #side [role="row"]:hover img,',
-				'.privacy-mode.blur-avatars #side [role="row"]:hover image,',
-				'.privacy-mode.blur-avatars #side [role="row"]:hover ._ak8h,',
-				'.privacy-mode.blur-avatars #side [role="row"]:hover [data-testid="default-user"],',
-				'.privacy-mode.blur-avatars #side [role="row"]:hover [data-icon="default-user"],',
-				'.privacy-mode.blur-avatars #side [role="row"]:hover svg[viewBox="0 0 49 49"],',
-				'.privacy-mode.blur-avatars #side [role="listitem"]:hover img,',
-				'.privacy-mode.blur-avatars #side [role="listitem"]:hover image,',
-				'.privacy-mode.blur-avatars #side [role="listitem"]:hover ._ak8h,',
-				'.privacy-mode.blur-avatars #side [role="listitem"]:hover [data-testid="default-user"],',
-				'.privacy-mode.blur-avatars #side [role="listitem"]:hover svg[viewBox="0 0 49 49"],',
-				'.privacy-mode.blur-avatars #side [data-testid="cell-frame-container"]:hover img,',
-				'.privacy-mode.blur-avatars #side [data-testid="cell-frame-container"]:hover image,',
-				'.privacy-mode.blur-avatars #side [data-testid="cell-frame-container"]:hover ._ak8h,',
-				'.privacy-mode.blur-avatars #side div[tabindex="-1"]:hover img,',
-				'.privacy-mode.blur-avatars #side div[tabindex="-1"]:hover image,',
-				'.privacy-mode.blur-avatars #side div[tabindex="-1"]:hover ._ak8h,',
-				'.privacy-mode.blur-avatars #side div._ak8l:hover img,',
-				'.privacy-mode.blur-avatars #side div._ak8l:hover image,',
-				'.privacy-mode.blur-avatars #side div._ak8l:hover ._ak8h,',
-				'.privacy-mode.blur-avatars #side img:hover,',
-				'.privacy-mode.blur-avatars #side image:hover,',
-				'.privacy-mode.blur-avatars #side ._ak8h:hover,',
-				'.privacy-mode.blur-avatars #side ._ak8h:hover *,',
-				'.privacy-mode.blur-avatars #side [data-testid="default-user"]:hover,',
-				'.privacy-mode.blur-avatars #side svg[viewBox="0 0 49 49"]:hover,',
-				'.privacy-mode.blur-avatars #pane-side [role="row"]:hover img,',
-				'.privacy-mode.blur-avatars #pane-side [role="row"]:hover image,',
-				'.privacy-mode.blur-avatars #pane-side [role="row"]:hover ._ak8h,',
-				'.privacy-mode.blur-avatars #pane-side [role="listitem"]:hover img,',
-				'.privacy-mode.blur-avatars #pane-side [role="listitem"]:hover image,',
-				'.privacy-mode.blur-avatars #pane-side [role="listitem"]:hover ._ak8h,',
-				'.privacy-mode.blur-avatars #pane-side [data-testid="cell-frame-container"]:hover img,',
-				'.privacy-mode.blur-avatars #pane-side [data-testid="cell-frame-container"]:hover image,',
-				'.privacy-mode.blur-avatars #pane-side [data-testid="cell-frame-container"]:hover ._ak8h,',
-				'.privacy-mode.blur-avatars #pane-side div[tabindex="-1"]:hover img,',
-				'.privacy-mode.blur-avatars #pane-side div[tabindex="-1"]:hover image,',
-				'.privacy-mode.blur-avatars #pane-side div[tabindex="-1"]:hover ._ak8h,',
-				'.privacy-mode.blur-avatars #pane-side div._ak8l:hover img,',
-				'.privacy-mode.blur-avatars #pane-side div._ak8l:hover image,',
-				'.privacy-mode.blur-avatars #pane-side div._ak8l:hover ._ak8h,',
-				'.privacy-mode.blur-avatars #pane-side img:hover,',
-				'.privacy-mode.blur-avatars #pane-side image:hover,',
-				'.privacy-mode.blur-avatars #pane-side ._ak8h:hover,',
-				'.privacy-mode.blur-avatars #pane-side ._ak8h:hover *,',
-				'.privacy-mode.blur-avatars [data-testid="chat-list"] [role="row"]:hover img,',
-				'.privacy-mode.blur-avatars [data-testid="chat-list"] [role="row"]:hover image,',
-				'.privacy-mode.blur-avatars [data-testid="chat-list"] [role="row"]:hover ._ak8h,',
-				'.privacy-mode.blur-avatars [data-testid="chat-list"] [role="listitem"]:hover img,',
-				'.privacy-mode.blur-avatars [data-testid="chat-list"] [role="listitem"]:hover image,',
-				'.privacy-mode.blur-avatars [data-testid="chat-list"] [role="listitem"]:hover ._ak8h,',
-				'.privacy-mode.blur-avatars [data-testid="chat-list"] [data-testid="cell-frame-container"]:hover img,',
-				'.privacy-mode.blur-avatars [data-testid="chat-list"] [data-testid="cell-frame-container"]:hover image,',
-				'.privacy-mode.blur-avatars [data-testid="chat-list"] [data-testid="cell-frame-container"]:hover ._ak8h,',
-				'.privacy-mode.blur-avatars [data-testid="chat-list"] div[tabindex="-1"]:hover img,',
-				'.privacy-mode.blur-avatars [data-testid="chat-list"] div[tabindex="-1"]:hover image,',
-				'.privacy-mode.blur-avatars [data-testid="chat-list"] div[tabindex="-1"]:hover ._ak8h,',
-				'.privacy-mode.blur-avatars div[aria-label="Chat list"] [role="row"]:hover img,',
-				'.privacy-mode.blur-avatars div[aria-label="Chat list"] [role="row"]:hover image,',
-				'.privacy-mode.blur-avatars div[aria-label="Chat list"] [role="row"]:hover ._ak8h,',
-				'.privacy-mode.blur-avatars div[aria-label*="Archived" i] [role="row"]:hover img,',
-				'.privacy-mode.blur-avatars div[aria-label*="Archived" i] [role="row"]:hover image,',
-				'.privacy-mode.blur-avatars div[aria-label*="Archived" i] [role="row"]:hover ._ak8h,',
-				'.privacy-mode.blur-avatars div[aria-label*="Archived" i] [role="listitem"]:hover img,',
-				'.privacy-mode.blur-avatars div[aria-label*="Archived" i] [role="listitem"]:hover image,',
-				'.privacy-mode.blur-avatars div[aria-label*="Archived" i] [role="listitem"]:hover ._ak8h,',
+				// Sidebar avatar reveal is marker-based so a broad parent hover cannot
+				// reveal avatars from neighboring chat rows.
 				'.privacy-mode.blur-avatars #main header:hover img,',
 				'.privacy-mode.blur-avatars #main header:hover image,',
 				'.privacy-mode.blur-avatars #main header:hover ._ak8h,',
@@ -1945,12 +1880,15 @@ func getInitScript(ua string) string {
 				// never select a generic background-image container.
 				var rowRect = row.getBoundingClientRect ? row.getBoundingClientRect() : null;
 				if (!rowRect || rowRect.width <= 0 || rowRect.height <= 0) return;
-				var visualCandidates = row.querySelectorAll('[style*="background-image"], [role="img"]');
+				var visualCandidates = row.querySelectorAll('div, span, [role="img"]');
 				for (var v = 0; v < visualCandidates.length; v++) {
 					var visual = visualCandidates[v];
 					var visualRect = visual.getBoundingClientRect ? visual.getBoundingClientRect() : null;
 					if (!visualRect || visualRect.width < 28 || visualRect.height < 28 || visualRect.width > 96 || visualRect.height > 96) continue;
 					if (Math.abs(visualRect.width - visualRect.height) > 18 || visualRect.left > rowRect.left + 96 || visualRect.top > rowRect.top + 24) continue;
+					var backgroundImage = '';
+					try { backgroundImage = window.getComputedStyle(visual).backgroundImage || ''; } catch (e) {}
+					if (backgroundImage === '' || backgroundImage === 'none') continue;
 					visual.setAttribute('data-wa-privacy-avatar', '1');
 					return;
 				}

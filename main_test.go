@@ -438,6 +438,9 @@ func TestPrivacyModeCoversArchivedChatsAndAllAvatarVariants(t *testing.T) {
 	if strings.Contains(script, "div.x78zum5 > div.x6s0dn4 > div") {
 		t.Fatal("avatar privacy must not blur unstable layout containers")
 	}
+	if strings.Contains(script, ".privacy-mode.blur-avatars #side [role=\"row\"]:hover img") {
+		t.Fatal("sidebar avatar reveal must not depend on broad parent hover selectors")
+	}
 }
 
 func TestThemeReapplyIsBoundedAndAvoidsObserverFeedbackLoop(t *testing.T) {
