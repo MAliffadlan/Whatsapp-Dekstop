@@ -97,6 +97,15 @@ sudo apt-get install -f
 sudo dnf install ./WhatsApp-Desk-Fedora-x64.rpm
 ```
 
+> [!NOTE]
+> **Ubuntu 24.04 (Noble), Linux Mint 22.x:** these ship WebKitGTK 4.1 only, while the
+> default `WhatsApp-Desk-Linux-*.deb` links `libwebkit2gtk-4.0.so.37` and fails with
+> `cannot open shared object file` (issues #8, #9). Use the `-webkit4.1` assets instead:
+> `WhatsApp-Desk-Linux-amd64-webkit4.1.deb` / `...-x64-webkit4.1.tar.gz`, or build with
+> `WA_DESK_WEBKIT=4.1 bash build_linux.sh`. Verify with:
+> `ldd dist_linux/whatsapp-desk | grep webkit` (expect `libwebkit2gtk-4.1.so.0`)
+> and `dpkg-deb -f <deb> Depends` (expect `libwebkit2gtk-4.1-0`).
+
 ### Verifying Release Integrity
 
 Every release ships with a signed [SHA256SUMS](https://github.com/vianziro/Whatsapp-Dekstop/releases/latest/download/SHA256SUMS) checksum list:

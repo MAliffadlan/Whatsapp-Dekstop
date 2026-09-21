@@ -42,6 +42,9 @@ together, with the macOS and spreadsheet-preview follow-ups they needed to be me
 
 ### Fixed
 
+- Linux: opt-in WebKitGTK 4.1 build variant (`WA_DESK_WEBKIT=4.1`) for Ubuntu 24.04,
+  Linux Mint 22.x and current Fedora, with `-webkit4.1` artifacts and honest DEB
+  `Depends`. The default 4.0 build is unchanged. Related to #8, #9.
 - Linux: the StatusNotifierItem tray properties no longer abort the process on launch on
   desktops with a tray watcher (#48).
 - `wa_crash.log` rotates past 1 MB with a single backup, so a crash loop can no longer grow it
