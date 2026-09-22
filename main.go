@@ -908,17 +908,25 @@ func getInitScript(ua string) string {
 				// Do NOT stopImmediatePropagation so WhatsApp's native drop handler
 				// on #main / conversation-panel receives the drop event for BOTH
 				// media (photos/videos) and documents (PDF, Office, etc.).
-				// Fallback: If WhatsApp's native modal has not opened after a delay,
-				// attempt programmatic injection.
-				setTimeout(function() {
+				// Fallback: if WhatsApp's native editor has not appeared after a
+				// few probes, attempt programmatic injection. A single 400ms
+				// check raced the editor mount on slower machines and injected a
+				// second batch over the native one, so probe several rounds and
+				// only inject when no editor has shown up the whole time.
+				var waNativeEditorChecks = 0;
+				var waNativeEditorPoll = setInterval(function() {
+					waNativeEditorChecks++;
 					var modalOpen = document.querySelector(
 						'[data-testid="media-editor"], [data-testid="image-editor"], ' +
 						'[data-testid="drawer-middle"], [role="dialog"], [data-animate-modal-popup="true"]'
 					);
-					if (!modalOpen) {
-						injectFiles(files, 0, isMedia);
+					if (modalOpen || waNativeEditorChecks >= 4) {
+						clearInterval(waNativeEditorPoll);
+						if (!modalOpen) {
+							injectFiles(files, 0, isMedia);
+						}
 					}
-				}, 400);
+				}, 350);
 			}
 
 			// File-picker uploads do not pass through the drag/drop handler above.
