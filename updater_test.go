@@ -4,7 +4,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -63,6 +65,67 @@ func TestLinuxArm64UpdaterNeverFallsBackToX64(t *testing.T) {
 	}
 	if got := updateAssetForPlatform("linux", "arm64"); !strings.HasSuffix(got, "Linux-arm64.tar.gz") {
 		t.Fatalf("Linux arm64 stable asset URL = %q", got)
+	}
+}
+
+func TestFindLinuxAssetPrefersWebkit41WhenRequested(t *testing.T) {
+	release := &GitHubRelease{Assets: []GitHubAsset{
+		{Name: "WhatsApp-Desk-Linux-x64.tar.gz", BrowserDownloadURL: "https://example.test/x64.tar.gz"},
+		{Name: "WhatsApp-Desk-Linux-x64-webkit4.1.tar.gz", BrowserDownloadURL: "https://example.test/x64-41.tar.gz"},
+	}}
+	if asset := findLinuxAsset(release, "x64", true); asset == nil || asset.Name != "WhatsApp-Desk-Linux-x64-webkit4.1.tar.gz" {
+		t.Fatalf("preferWebkit41 must select the -webkit4.1 tarball, got %#v", asset)
+	}
+	if asset := findLinuxAsset(release, "x64", false); asset == nil || asset.Name != "WhatsApp-Desk-Linux-x64.tar.gz" {
+		t.Fatalf("without preference must keep the historical tarball, got %#v", asset)
+	}
+}
+
+func TestFindLinuxAssetFallsBackToPlain(t *testing.T) {
+	// Releases predating the 4.1 variant carry only the plain tarball; the
+	// preference must never turn into a "no update" on those releases.
+	release := &GitHubRelease{Assets: []GitHubAsset{
+		{Name: "WhatsApp-Desk-Linux-x64.tar.gz", BrowserDownloadURL: "https://example.test/x64.tar.gz"},
+	}}
+	if asset := findLinuxAsset(release, "x64", true); asset == nil || asset.Name != "WhatsApp-Desk-Linux-x64.tar.gz" {
+		t.Fatalf("missing -webkit4.1 asset must fall back to plain, got %#v", asset)
+	}
+}
+
+func TestFindLinuxAssetNeverFallsBackCrossArch(t *testing.T) {
+	release := &GitHubRelease{Assets: []GitHubAsset{
+		{Name: "WhatsApp-Desk-Linux-x64-webkit4.1.tar.gz", BrowserDownloadURL: "https://example.test/x64-41.tar.gz"},
+	}}
+	if asset := findLinuxAsset(release, "arm64", true); asset != nil {
+		t.Fatalf("arm64 must never receive an x64 tarball, got %#v", asset)
+	}
+}
+
+func TestWebkitGTK40DetectorAgreesWithLdconfig(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("detector only probes on Linux")
+	}
+	out, err := exec.Command("ldconfig", "-p").Output()
+	if err != nil {
+		t.Skipf("ldconfig unavailable: %v", err)
+	}
+	want := strings.Contains(string(out), "libwebkit2gtk-4.0.so")
+	if got := webkitGTK40Present(); got != want {
+		t.Fatalf("webkitGTK40Present() = %v, ldconfig says %v", got, want)
+	}
+}
+
+func TestLinuxStableAssetURLMatchesLocalWebkit(t *testing.T) {
+	got := updateAssetForPlatform("linux", "amd64")
+	wantVariant := runtime.GOOS == "linux" && !webkitGTK40Present()
+	if wantVariant && !strings.HasSuffix(got, "Linux-x64-webkit4.1.tar.gz") {
+		t.Fatalf("4.1-only host must get the -webkit4.1 URL, got %q", got)
+	}
+	if !wantVariant && !strings.HasSuffix(got, "Linux-x64.tar.gz") {
+		t.Fatalf("default host must keep the historical URL, got %q", got)
+	}
+	if !isAllowedUpdateURL(got) {
+		t.Fatalf("stable Linux URL %q must pass the updater allowlist", got)
 	}
 }
 

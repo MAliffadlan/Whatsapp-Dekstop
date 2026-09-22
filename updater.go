@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"runtime"
@@ -147,18 +149,71 @@ func findAssetForPlatform(release *GitHubRelease, goos, goarch string) *GitHubAs
 		if goarch == "arm64" || goarch == "aarch64" {
 			bundleArch = "arm64"
 		}
-		for _, preferred := range []string{
-			"WhatsApp-Desk-Linux-" + bundleArch + ".tar.gz",
-			"WhatsApp-Linux-" + bundleArch + ".tar.gz",
-		} {
-			for i := range release.Assets {
-				if strings.EqualFold(release.Assets[i].Name, preferred) {
-					return &release.Assets[i]
-				}
-			}
-		}
+		// On a 4.1-only system (Ubuntu 24.04+, Mint 22.x, Fedora 39+) the
+		// historical 4.0-linked tarball cannot start, so prefer the
+		// -webkit4.1 artifact when the release carries one. The preference is
+		// only computed for the OS actually running this process; cross-OS
+		// queries (and the unit tests) keep the historical behavior.
+		preferWebkit41 := goos == runtime.GOOS && bundleArch == "x64" && !webkitGTK40Present()
+		return findLinuxAsset(release, bundleArch, preferWebkit41)
 		// Do not use a broad Linux archive fallback here. It previously selected
 		// x64 on arm64 machines merely because it was the only archive present.
+	}
+	return nil
+}
+
+// webkitGTK40Present reports whether the WebKitGTK 4.0 runtime library is
+// available on this Linux system. The loader cache (ldconfig -p) is
+// authoritative; well-known library directories are a fallback for systems
+// without ldconfig. Any detection failure returns true so asset selection
+// falls back to the historical 4.0-named artifact — never worse than before
+// this check existed (fail-open). Non-Linux builds always report true.
+func webkitGTK40Present() bool {
+	if runtime.GOOS != "linux" {
+		return true
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if out, err := exec.CommandContext(ctx, "ldconfig", "-p").Output(); err == nil {
+		for _, line := range strings.Split(string(out), "\n") {
+			if strings.Contains(line, "libwebkit2gtk-4.0.so") {
+				return true
+			}
+		}
+		return false
+	}
+	for _, dir := range []string{
+		"/usr/lib/x86_64-linux-gnu",
+		"/usr/lib/aarch64-linux-gnu",
+		"/usr/lib64",
+		"/usr/lib",
+	} {
+		if matches, _ := filepath.Glob(filepath.Join(dir, "libwebkit2gtk-4.0.so*")); len(matches) > 0 {
+			return true
+		}
+	}
+	return true
+}
+
+// findLinuxAsset selects the self-update tarball for a Linux bundleArch.
+// When preferWebkit41 is set, the -webkit4.1 artifact wins if present and the
+// historical 4.0-named tarball remains the fallback, so releases that predate
+// the 4.1 variant keep working. Cross-arch fallback is still refused: an
+// arm64 request never receives an x64 binary.
+func findLinuxAsset(release *GitHubRelease, bundleArch string, preferWebkit41 bool) *GitHubAsset {
+	names := []string{
+		"WhatsApp-Desk-Linux-" + bundleArch + ".tar.gz",
+		"WhatsApp-Linux-" + bundleArch + ".tar.gz",
+	}
+	if preferWebkit41 {
+		names = append([]string{"WhatsApp-Desk-Linux-" + bundleArch + "-webkit4.1.tar.gz"}, names...)
+	}
+	for _, preferred := range names {
+		for i := range release.Assets {
+			if strings.EqualFold(release.Assets[i].Name, preferred) {
+				return &release.Assets[i]
+			}
+		}
 	}
 	return nil
 }
@@ -196,6 +251,13 @@ func updateAssetForPlatform(goos, goarch string) string {
 	case "linux":
 		if goarch == "arm64" || goarch == "aarch64" {
 			return "https://github.com/" + githubRepo + "/releases/latest/download/WhatsApp-Desk-Linux-arm64.tar.gz"
+		}
+		// Primary update path uses this static URL (no API asset list), so it
+		// needs the same variant preference: on a 4.1-only system the plain
+		// 4.0-linked tarball cannot start. arm64 has no -webkit4.1 artifact,
+		// and cross-OS queries keep the historical URL.
+		if goos == runtime.GOOS && !webkitGTK40Present() {
+			return "https://github.com/" + githubRepo + "/releases/latest/download/WhatsApp-Desk-Linux-x64-webkit4.1.tar.gz"
 		}
 		return "https://github.com/" + githubRepo + "/releases/latest/download/WhatsApp-Desk-Linux-x64.tar.gz"
 	}

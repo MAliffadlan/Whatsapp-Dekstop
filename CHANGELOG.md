@@ -19,6 +19,12 @@ Version numbers are declared in exactly one place — `appVersion` in `updater.g
 
 ## [Unreleased]
 
+### Fixed
+
+- Linux: the self-updater prefers the `-webkit4.1` tarball on systems without the
+  WebKitGTK 4.0 runtime (Ubuntu 24.04+, Mint 22.x, Fedora 39+), falling back to the
+  historical artifact otherwise and never across architectures. Related to #8, #9.
+
 ## [1.5.9.8] - 2026-09-22
 
 > Click Recovery, Multi-File Upload Hardening & WebKitGTK 4.1
