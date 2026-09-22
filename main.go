@@ -1748,7 +1748,8 @@ func getInitScript(ua string) string {
 				'.privacy-mode.blur-avatars [data-wa-privacy-archived-row="1"] ._ak8h,',
 				'.privacy-mode.blur-avatars [data-wa-privacy-archived-row="1"] [data-testid*="avatar" i],',
 				'.privacy-mode.blur-avatars [data-wa-privacy-archived-row="1"] [data-testid="default-user"],',
-				'.privacy-mode.blur-avatars [data-wa-privacy-archived-row="1"] [data-icon],',
+				'.privacy-mode.blur-avatars [data-wa-privacy-archived-row="1"] [data-icon="default-user"],',
+				'.privacy-mode.blur-avatars [data-wa-privacy-archived-row="1"] [data-icon="default-group"],',
 				'.privacy-mode.blur-avatars [data-wa-privacy-archived-row="1"] svg[viewBox="0 0 49 49"]',
 				'{ filter: blur(12px) !important; transition: filter 0.15s ease-out !important; }',
 				// Hovering any row or container restores its contents instantly.
@@ -1871,6 +1872,14 @@ func getInitScript(ua string) string {
 			].join('\n');
 
 			var activePrivacyHoverRow = null;
+			var PRIVACY_ARCHIVED_LABEL_RE = /^(Archived|Diarsipkan|Archiviert|Archivio|Archiviati|Archivados?|Archivadas?|Архив|已归档|封存)\b/i;
+			var PRIVACY_ARCHIVED_INFO_RE = /These chats stay archived when new messages are received|To change this experience, go to settings > chats on your phone|Obrolan ini tetap diarsipkan saat pesan baru diterima|Untuk mengubah pengalaman ini.*Pengaturan.*(Chat|Obrolan)/i;
+			function privacyIsArchivedNavigationText(text) {
+				return PRIVACY_ARCHIVED_LABEL_RE.test((text || '').replace(/\s+/g, ' ').trim());
+			}
+			function privacyIsArchivedInfoText(text) {
+				return PRIVACY_ARCHIVED_INFO_RE.test((text || '').replace(/\s+/g, ' ').trim());
+			}
 			function markPrivacyAvatarTargets(row, avatarSelector) {
 				var avatars = row.querySelectorAll(avatarSelector);
 				for (var a = 0; a < avatars.length; a++) avatars[a].setAttribute('data-wa-privacy-avatar', '1');
@@ -1917,20 +1926,20 @@ func getInitScript(ua string) string {
 					for (var i = 0; i < rows.length; i++) {
 						var row = rows[i];
 						var rowText = (row.textContent || '').trim();
-						if (/^Archived\b/i.test(rowText) || row.querySelector('[data-icon*="archive" i], [data-testid*="archive" i], [aria-label*="archive" i]')) continue;
+						if (privacyIsArchivedNavigationText(rowText) || row.querySelector('[data-icon*="archive" i], [data-testid*="archive" i], [aria-label*="archiv" i], [aria-label*="diarsip" i]')) continue;
 						if (row.querySelectorAll('span').length < 2 &&
 							!row.matches('[data-testid="cell-frame-container"], div._ak8l')) continue;
 						row.setAttribute('data-wa-privacy-chat-row', '1');
 						markPrivacyAvatarTargets(row, avatarSelector);
 					}
 				}
-				var archivedLabels = document.querySelectorAll('#side span, #side div, #pane-side span, #pane-side div');
+				var archivedLabels = document.querySelectorAll('#side span, #pane-side span, #side [role="button"], #pane-side [role="button"]');
 				for (var l = 0; l < archivedLabels.length; l++) {
 					var label = archivedLabels[l];
-					if ((label.textContent || '').trim() !== 'Archived') continue;
+					if (!privacyIsArchivedNavigationText(label.textContent)) continue;
 					var labelParent = label;
 					for (var depth = 0; labelParent && depth < 8; depth++, labelParent = labelParent.parentElement) {
-						if ((labelParent.textContent || '').trim() !== 'Archived') continue;
+						if (!privacyIsArchivedNavigationText(labelParent.textContent)) continue;
 						if (labelParent.clientHeight >= 40 || labelParent.querySelector('[data-icon*="archive" i], [data-testid*="archive" i]')) {
 							labelParent.removeAttribute('data-wa-privacy-chat-row');
 							labelParent.setAttribute('data-wa-privacy-archive-control', '1');
@@ -1938,12 +1947,12 @@ func getInitScript(ua string) string {
 						}
 					}
 				}
-				var archiveNodes = document.querySelectorAll('[data-icon*="archive" i], [data-testid*="archive" i], [aria-label*="archive" i]');
+				var archiveNodes = document.querySelectorAll('[data-icon*="archive" i], [data-testid*="archive" i], [aria-label*="archiv" i], [aria-label*="diarsip" i]');
 				for (var n = 0; n < archiveNodes.length; n++) {
 					var control = archiveNodes[n];
 					while (control && control !== document.body) {
 						var controlText = (control.textContent || '').trim();
-						if (/^Archived\b/i.test(controlText)) {
+						if (privacyIsArchivedNavigationText(controlText)) {
 							control.removeAttribute('data-wa-privacy-chat-row');
 							control.setAttribute('data-wa-privacy-archive-control', '1');
 							break;
@@ -1953,9 +1962,9 @@ func getInitScript(ua string) string {
 				}
 			}
 			function forceArchivedControlVisible() {
-				var labels = document.querySelectorAll('#side span, #side div, #pane-side span, #pane-side div');
+				var labels = document.querySelectorAll('[data-wa-privacy-archive-control="1"]');
 				for (var i = 0; i < labels.length; i++) {
-					if ((labels[i].textContent || '').trim() !== 'Archived') continue;
+					if (!privacyIsArchivedNavigationText(labels[i].textContent)) continue;
 					var control = labels[i];
 					for (var depth = 0; control && depth < 10; depth++, control = control.parentElement) {
 						var rect = control.getBoundingClientRect ? control.getBoundingClientRect() : null;
@@ -1969,16 +1978,16 @@ func getInitScript(ua string) string {
 						break;
 					}
 				}
-				var archiveIcons = document.querySelectorAll('#side [data-icon*="archive" i], #side [data-testid*="archive" i], #side svg, #pane-side [data-icon*="archive" i], #pane-side [data-testid*="archive" i], #pane-side svg');
+				var archiveIcons = document.querySelectorAll('[data-icon*="archive" i], [data-testid*="archive" i], [aria-label*="archiv" i], [aria-label*="diarsip" i]');
 				for (var a = 0; a < archiveIcons.length; a++) {
 					var icon = archiveIcons[a];
 					var iconRow = icon.closest && icon.closest('[role="row"], [role="listitem"], [data-testid="cell-frame-container"], div[tabindex="-1"], div._ak8l');
-					if (iconRow && /^Archived\b/i.test((iconRow.textContent || '').trim())) {
+					if (iconRow && privacyIsArchivedNavigationText(iconRow.textContent)) {
 						iconRow.removeAttribute('data-wa-privacy-chat-row');
 						iconRow.setAttribute('data-wa-privacy-archive-control', '1');
 						iconRow.style.setProperty('filter', 'none', 'important');
 					}
-					if (icon.matches && (icon.matches('[data-icon*="archive" i]') || icon.matches('[data-testid*="archive" i]'))) {
+					if (icon.matches && (icon.matches('[data-icon*="archive" i]') || icon.matches('[data-testid*="archive" i]') || icon.matches('[aria-label*="archiv" i]') || icon.matches('[aria-label*="diarsip" i]'))) {
 						icon.style.setProperty('filter', 'none', 'important');
 						icon.querySelectorAll('*').forEach(function(child) { child.style.setProperty('filter', 'none', 'important'); });
 					}
@@ -1987,7 +1996,7 @@ func getInitScript(ua string) string {
 			function isPrivacySidebarControl(node) {
 				if (!node || !node.matches) return false;
 				var text = (node.textContent || '').trim();
-				return /^Archived\b/i.test(text) || !!node.querySelector('[data-icon*="archive" i], [data-testid*="archive" i], [aria-label*="archive" i]');
+				return privacyIsArchivedNavigationText(text) || !!node.querySelector('[data-icon*="archive" i], [data-testid*="archive" i], [aria-label*="archiv" i], [aria-label*="diarsip" i]');
 			}
 			function privacyChatListRootFromTarget(target) {
 				var node = target && target.nodeType === 1 ? target : null;
@@ -1996,7 +2005,7 @@ func getInitScript(ua string) string {
 						node.getAttribute('data-testid') === 'chat-list' ||
 						node.getAttribute('aria-label') === 'Chat list' ||
 						node.getAttribute('data-wa-privacy-archived-view') === '1' ||
-						/archived/i.test(node.getAttribute('aria-label') || '')) return node;
+						/(archiv|diarsip)/i.test(node.getAttribute('aria-label') || '')) return node;
 					node = node.parentElement;
 				}
 				return null;
@@ -2067,7 +2076,7 @@ func getInitScript(ua string) string {
 				function isArchivedChatRow(row) {
 					if (!row || !row.querySelectorAll) return false;
 					var text = (row.textContent || '').trim();
-					if (!text || /^Archived\b/i.test(text)) return false;
+					if (!text || privacyIsArchivedNavigationText(text)) return false;
 					var hasChatText = row.querySelectorAll('span').length >= 2;
 					return hasChatText && (row.matches(rowSelector) || row.querySelector(avatarSelector));
 				}
@@ -2097,31 +2106,41 @@ func getInitScript(ua string) string {
 						var candidate = candidates[i];
 						var text = (candidate.textContent || '').replace(/\s+/g, ' ').trim();
 						if (text.length < 40 || text.length > 240) continue;
-						if (/These chats stay archived when new messages are received/i.test(text) ||
-							/To change this experience, go to settings > chats on your phone/i.test(text)) {
+						if (privacyIsArchivedInfoText(text)) {
 							candidate.setAttribute('data-wa-privacy-archived-info', '1');
 							candidate.style.setProperty('filter', 'none', 'important');
 							var children = candidate.querySelectorAll('*');
 							for (var c = 0; c < children.length; c++) children[c].style.setProperty('filter', 'none', 'important');
-						}
 					}
 				}
-				// The Archived title is not consistently exposed as a heading or aria label.
-				// Find the guidance block directly so it stays visible in every layout.
-				markArchivedInfo(document.body);
-				var anchors = document.querySelectorAll('[aria-label*="Archived" i], [data-testid*="archiv" i], [role="heading"], h1, h2, h3');
+			}
+				function privacyLooksLikeArchivedView(anchor) {
+					if (!anchor || !anchor.matches) return false;
+					if (anchor.getAttribute('data-wa-privacy-archived-view') === '1' ||
+						anchor.matches('[aria-label*="archiv" i], [aria-label*="diarsip" i], [data-testid*="archiv" i], [role="heading"], h1, h2, h3')) return true;
+					var parent = anchor;
+					for (var depth = 0; parent && depth < 8; depth++, parent = parent.parentElement) {
+						if (parent.querySelector && parent.querySelector('[data-icon*="back" i], [data-testid*="back" i], [aria-label*="back" i], [aria-label*="kembali" i]')) return true;
+					}
+					return false;
+				}
+				var anchors = document.querySelectorAll('[data-wa-privacy-archived-view="1"], [aria-label*="archiv" i], [aria-label*="diarsip" i], [data-testid*="archiv" i], [role="heading"], h1, h2, h3, #side span, #pane-side span');
 				for (var i = 0; i < anchors.length; i++) {
 					var anchor = anchors[i];
 					var label = (anchor.getAttribute('aria-label') || '').trim();
 					var text = (anchor.textContent || '').trim();
-					if (!/archived/i.test(label) && !/^Archived$/i.test(text)) continue;
+					if (!/(archiv|diarsip)/i.test(label) && !privacyIsArchivedNavigationText(text) && anchor.getAttribute('data-wa-privacy-archived-view') !== '1') continue;
+					if ((anchor.matches('#side span, #pane-side span')) && !privacyLooksLikeArchivedView(anchor)) continue;
 					var view = anchor;
 					for (var depth = 0; view && depth < 8; depth++, view = view.parentElement) {
 						var hasChatRows = view.querySelector && view.querySelector(rowSelector);
 						var hasChatVisuals = view.querySelectorAll && view.querySelectorAll('img, image').length >= 2 && view.querySelectorAll('span').length >= 2;
 						if (hasChatRows || hasChatVisuals) {
 							view.setAttribute('data-wa-privacy-archived-view', '1');
-							markArchivedInfo(view);
+							if (view.getAttribute('data-wa-privacy-archived-info-checked') !== '1') {
+								markArchivedInfo(view);
+								view.setAttribute('data-wa-privacy-archived-info-checked', '1');
+							}
 							markRowsInView(view);
 							break;
 						}
@@ -2136,21 +2155,29 @@ func getInitScript(ua string) string {
 					}, delay);
 				});
 			}
-			document.addEventListener('click', function() {
-				scheduleArchivedPrivacyMark();
+			document.addEventListener('click', function(e) {
+				var target = e.target && e.target.closest ? e.target.closest('[data-icon*="archive" i], [data-testid*="archive" i], [aria-label*="archiv" i], [aria-label*="diarsip" i]') : null;
+				if (target || isPrivacySidebarControl(e.target)) scheduleArchivedPrivacyMark();
 			}, true);
 			document.addEventListener('mouseover', function(e) { updatePrivacyHoverFromTarget(e.target); }, true);
 			document.addEventListener('mousemove', function(e) { updatePrivacyHoverFromTarget(e.target); }, true);
 			document.addEventListener('mouseout', function(e) {
 				var row = privacyChatRowFromTarget(e.target);
 				if (row && (!e.relatedTarget || !row.contains(e.relatedTarget))) clearPrivacyHoverRow();
-				if (privacyChatListRootFromTarget(e.target)) setTimeout(forceArchivedControlVisible, 0);
 			}, true);
-			var privacySidebarObserver = new MutationObserver(function() {
-				if (isPrivacyActive) {
+			var privacySidebarRefreshTimer = null;
+			function schedulePrivacySidebarRefresh() {
+				clearTimeout(privacySidebarRefreshTimer);
+				privacySidebarRefreshTimer = setTimeout(function() {
+					privacySidebarRefreshTimer = null;
+					if (!isPrivacyActive) return;
+					markPrivacyChatRows();
 					markArchivedPrivacyViews();
 					forceArchivedControlVisible();
-				}
+				}, 100);
+			}
+			var privacySidebarObserver = new MutationObserver(function() {
+				if (isPrivacyActive) schedulePrivacySidebarRefresh();
 			});
 			function observePrivacySidebar() {
 				var side = document.getElementById('side') || document.getElementById('pane-side');

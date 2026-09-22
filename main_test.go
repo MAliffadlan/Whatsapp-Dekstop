@@ -402,24 +402,29 @@ func TestPrivacyModeCoversArchivedChatsAndAllAvatarVariants(t *testing.T) {
 		"function markArchivedInfo(view)",
 		"candidate.style.setProperty('filter', 'none', 'important')",
 		"replace(/\\s+/g, ' ')",
-		"markArchivedInfo(document.body)",
+		"PRIVACY_ARCHIVED_LABEL_RE",
+		"PRIVACY_ARCHIVED_INFO_RE",
+		"privacyIsArchivedNavigationText",
+		"privacyIsArchivedInfoText",
+		"function privacyLooksLikeArchivedView(anchor)",
+		"[data-icon=\"default-user\"]",
 		"These chats stay archived when new messages are received",
 		"function isArchivedChatRow(row)",
-		"/^Archived\\b/i.test(rowText)",
 		"function isPrivacySidebarControl(node)",
-		"/^Archived\\b/i.test(text)",
 		"data-wa-privacy-archive-control",
 		"control.removeAttribute('data-wa-privacy-chat-row')",
-		"var archivedLabels = document.querySelectorAll('#side span, #side div, #pane-side span, #pane-side div')",
+		"var archivedLabels = document.querySelectorAll('#side span, #pane-side span, #side [role=\"button\"], #pane-side [role=\"button\"]')",
 		"labelParent.clientHeight >= 40",
 		"function forceArchivedControlVisible()",
 		"control.getBoundingClientRect",
 		"control.style.setProperty('filter', 'none', 'important')",
-		"var archiveIcons = document.querySelectorAll('#side [data-icon*=\"archive\" i]",
+		"var archiveIcons = document.querySelectorAll('[data-icon*=\"archive\" i]",
 		"icon.style.setProperty('filter', 'none', 'important')",
-		"setTimeout(forceArchivedControlVisible, 0)",
 		"new MutationObserver(function()",
 		"observePrivacySidebar()",
+		"function schedulePrivacySidebarRefresh()",
+		"clearTimeout(privacySidebarRefreshTimer)",
+		"data-wa-privacy-archived-info-checked",
 		".privacy-mode.blur-avatars #main header ._ak8h",
 		// Sparing timestamps in #side (including archived view)
 		"tagTimesIn(document.getElementById('side') || document.getElementById('pane-side'))",
@@ -440,6 +445,12 @@ func TestPrivacyModeCoversArchivedChatsAndAllAvatarVariants(t *testing.T) {
 	}
 	if strings.Contains(script, ".privacy-mode.blur-avatars #side [role=\"row\"]:hover img") {
 		t.Fatal("sidebar avatar reveal must not depend on broad parent hover selectors")
+	}
+	if strings.Contains(script, "markArchivedInfo(document.body)") {
+		t.Fatal("archived guidance must not scan the whole document")
+	}
+	if strings.Contains(script, "#side span, #side div, #pane-side span, #pane-side div") {
+		t.Fatal("archived privacy must not repeatedly scan every sidebar div")
 	}
 }
 
