@@ -877,15 +877,27 @@ func getInitScript(ua string) string {
 				return false;
 			}
 
+			function clearDragVisualState() {
+				dragCounter = 0;
+				var dz = getDropZone();
+				if (dz) dz.classList.remove('wa-drag-over');
+			}
+
 			function handleDrop(e) {
+				// Reset the drag visual state on EVERY drop, before any early
+				// return. The wa-drag-over class sets pointer-events:none on
+				// every element, so a drop that lands on an excluded target
+				// (a dialog, the settings modal) or arrives with an empty
+				// file list (cloud placeholder files, e.g. OneDrive on
+				// Windows) used to leave the class stuck until reload — every
+				// click in the app went dead, including selecting a contact
+				// from the @mention popup, while typing and Enter kept
+				// working.
+				clearDragVisualState();
 				if (!isFileDrag(e) || !isChatDrop(e) || dropInProgress) return;
 
 				var files = Array.prototype.slice.call((e.dataTransfer && e.dataTransfer.files) || []);
 				if (!files || files.length === 0) return;
-
-				dragCounter = 0;
-				var dz = getDropZone();
-				if (dz) dz.classList.remove('wa-drag-over');
 
 				var isMedia = areAllMediaFiles(files);
 
@@ -923,6 +935,11 @@ func getInitScript(ua string) string {
 			document.addEventListener('dragleave', handleDragLeave, true);
 			document.addEventListener('dragover', handleDragOver, true);
 			document.addEventListener('drop', handleDrop, true);
+			// Safety nets: a drag that never produces a matching dragleave
+			// (cancelled via Esc, source outside the page, or the window
+			// losing focus mid-drag) must not leave the class behind.
+			document.addEventListener('dragend', clearDragVisualState, true);
+			window.addEventListener('blur', clearDragVisualState);
 			document.addEventListener('change', handleFileInputChange, true);
 		});
 
