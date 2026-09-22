@@ -19,6 +19,10 @@ Version numbers are declared in exactly one place — `appVersion` in `updater.g
 
 ## [Unreleased]
 
+## [1.5.9.8] - 2026-09-22
+
+> Click Recovery, Multi-File Upload Hardening & WebKitGTK 4.1
+
 Six pull requests contributed by [@MAliffadlan](https://github.com/MAliffadlan) land here
 together, with the macOS and spreadsheet-preview follow-ups they needed to be mergeable.
 
@@ -58,6 +62,11 @@ together, with the macOS and spreadsheet-preview follow-ups they needed to be me
   clicks stopped responding (including selecting a contact from the @mention popup) while
   typing and Enter kept working, until the app was restarted. The drag state is now reset on
   every drop and again on `dragend` and window blur.
+- The drop fallback that waits for WhatsApp's native editor used a single 400 ms check; when
+  the editor mounted slower than that — common on Windows — the app injected the dropped files
+  a second time over the batch WhatsApp had already accepted, which could leave only one file
+  in the editor. The fallback now probes for several rounds and only injects when no editor
+  appeared during the whole window.
 
 ---
 
@@ -523,7 +532,8 @@ First production release under the WhatsApp Desk name.
 
 ---
 
-[Unreleased]: https://github.com/vianziro/Whatsapp-Dekstop/compare/v1.5.9.7...HEAD
+[Unreleased]: https://github.com/vianziro/Whatsapp-Dekstop/compare/v1.5.9.8...HEAD
+[1.5.9.8]: https://github.com/vianziro/Whatsapp-Dekstop/compare/v1.5.9.7...v1.5.9.8
 [1.5.9.7]: https://github.com/vianziro/Whatsapp-Dekstop/compare/v1.5.9.6...v1.5.9.7
 [1.5.9.6]: https://github.com/vianziro/Whatsapp-Dekstop/compare/v1.5.9.5...v1.5.9.6
 [1.5.9.5]: https://github.com/vianziro/Whatsapp-Dekstop/compare/v1.5.9.4...v1.5.9.5
