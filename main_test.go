@@ -388,6 +388,24 @@ func TestPrivacyModeCopyMatchesTimestampBlurBehavior(t *testing.T) {
 	}
 }
 
+func TestPrivacyModeCoversStickersAndRevealsOnlyTheirMessage(t *testing.T) {
+	script := getInitScript("test-agent")
+	checks := []string{
+		`[data-testid="sticker-container"]`,
+		`[data-testid="animated-sticker"]`,
+		`img[src*=".webp"][data-testid*="sticker" i]`,
+		`[data-testid="msg-container"]:hover [data-testid="sticker-container"]`,
+		`.message-in:hover [data-testid="sticker-container"]`,
+		`.message-out:hover [data-testid="sticker-container"]`,
+		`[role="row"]:hover [data-testid="sticker-container"]`,
+	}
+	for _, want := range checks {
+		if !strings.Contains(script, want) {
+			t.Errorf("privacy sticker handling is missing %q", want)
+		}
+	}
+}
+
 func TestPrivacyModeCoversArchivedChatsAndAllAvatarVariants(t *testing.T) {
 	script := getInitScript("test-agent")
 	checks := []string{
