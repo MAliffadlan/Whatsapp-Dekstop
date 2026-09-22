@@ -949,6 +949,46 @@ func TestDragAndDropUploadStabilization(t *testing.T) {
 	}
 }
 
+// TestDragOverStateClearedOnEveryDrop guards against a stuck .wa-drag-over
+// class. That class sets `pointer-events: none` on every element, so if the
+// drop handler returns early (drop over an excluded target such as a dialog,
+// or a drop whose file list is empty — cloud placeholder files on Windows)
+// without resetting first, every click in the app goes dead until reload:
+// typing and Enter keep working, which is exactly why it surfaces as "the
+// @mention popup appears but contacts cannot be selected". The reset must run
+// before any early return, and safety nets must exist for drags that end
+// without a matching dragleave.
+func TestDragOverStateClearedOnEveryDrop(t *testing.T) {
+	script := getInitScript("test-agent")
+
+	// A dedicated reset helper must exist and must be the first statement of
+	// handleDrop, ahead of every early return in that function.
+	if !strings.Contains(script, "function clearDragVisualState() {") {
+		t.Fatal("script is missing the clearDragVisualState helper")
+	}
+	dropIdx := strings.Index(script, "function handleDrop(e) {")
+	if dropIdx == -1 {
+		t.Fatal("script is missing the handleDrop function")
+	}
+	body := script[dropIdx : dropIdx+600]
+	if !strings.Contains(body, "clearDragVisualState();") {
+		t.Error("handleDrop does not call clearDragVisualState() before its early returns")
+	}
+	if strings.Contains(body, "dragCounter = 0") {
+		t.Error("handleDrop still resets drag state inline instead of via clearDragVisualState")
+	}
+
+	// Safety nets for drags that end without a matching dragleave.
+	for _, want := range []string{
+		"document.addEventListener('dragend', clearDragVisualState",
+		"window.addEventListener('blur', clearDragVisualState)",
+	} {
+		if !strings.Contains(script, want) {
+			t.Errorf("script is missing drag-state safety net %q", want)
+		}
+	}
+}
+
 func TestSettingsFallbackButtonsAreHarmonized(t *testing.T) {
 	script := getInitScript("test-agent")
 

@@ -49,6 +49,12 @@ together, with the macOS and spreadsheet-preview follow-ups they needed to be me
 - macOS: the download-folder blocklist and the preview-directory check resolved only one side
   of the comparison, so symlinked prefixes such as `/etc` and `/var` were never matched
   (follow-up to #44).
+- A file drop that hit an excluded target (a dialog, the settings modal) or arrived with an
+  empty file list — cloud placeholder files such as OneDrive's are the common case — left the
+  drag-over highlight class stuck. That class disables pointer events across the whole app, so
+  clicks stopped responding (including selecting a contact from the @mention popup) while
+  typing and Enter kept working, until the app was restarted. The drag state is now reset on
+  every drop and again on `dragend` and window blur.
 
 ---
 
