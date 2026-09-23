@@ -2306,6 +2306,7 @@ func getInitScript(ua string) string {
 					var animStyle = document.createElement('style');
 					animStyle.id = 'wa-update-anim';
 					animStyle.textContent = '@keyframes waSlideDown { from { transform: translateY(-100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }' +
+						'html.wa-update-visible #app { height: calc(100% - var(--wa-update-banner-height, 0px)) !important; margin-top: var(--wa-update-banner-height, 0px) !important; }' +
 						'#wa-btn-update:hover { background: #029070 !important; transform: translateY(-1px); }' +
 						'#wa-btn-dismiss:hover { color: #e9edef !important; }';
 					document.head.appendChild(animStyle);
@@ -2313,7 +2314,7 @@ func getInitScript(ua string) string {
 
 				var banner = document.createElement('div');
 				banner.id = 'wa-update-banner';
-				banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:rgba(17,27,33,0.97);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(0,168,132,0.35);padding:9px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;z-index:9999998;box-shadow:0 6px 24px rgba(0,0,0,0.6);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#e9edef;font-size:13px;animation:waSlideDown 0.25s cubic-bezier(0.16,1,0.3,1);';
+				banner.style.cssText = 'position:fixed;top:0;left:0;right:0;box-sizing:border-box;min-height:50px;background:rgba(17,27,33,0.97);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(0,168,132,0.35);padding:9px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;z-index:9999998;box-shadow:0 6px 24px rgba(0,0,0,0.6);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#e9edef;font-size:13px;animation:waSlideDown 0.25s cubic-bezier(0.16,1,0.3,1);';
 
 				var leftWrap = document.createElement('div');
 				leftWrap.style.cssText = 'display:flex;align-items:center;gap:10px;min-width:0;flex:1;';
@@ -2377,7 +2378,20 @@ func getInitScript(ua string) string {
 				banner.appendChild(leftWrap);
 				banner.appendChild(rightWrap);
 				var bannerParent = document.body || document.documentElement;
-				if (bannerParent) bannerParent.appendChild(banner);
+				if (bannerParent) {
+					bannerParent.appendChild(banner);
+					var layoutRoot = document.documentElement;
+					var syncBannerLayout = function() {
+						if (!banner.isConnected || !layoutRoot) return;
+						layoutRoot.style.setProperty('--wa-update-banner-height', banner.offsetHeight + 'px');
+						layoutRoot.classList.add('wa-update-visible');
+					};
+					syncBannerLayout();
+					if (window.ResizeObserver) {
+						var bannerResizeObserver = new ResizeObserver(syncBannerLayout);
+						bannerResizeObserver.observe(banner);
+					}
+				}
 
 				try {
 					if ((!window.isNotificationsEnabled || window.isNotificationsEnabled()) && window.sendNativeNotification) {
@@ -2407,6 +2421,8 @@ func getInitScript(ua string) string {
 					if (banner.parentNode) {
 						banner.parentNode.removeChild(banner);
 					}
+					document.documentElement.classList.remove('wa-update-visible');
+					document.documentElement.style.removeProperty('--wa-update-banner-height');
 				};
 			};
 
