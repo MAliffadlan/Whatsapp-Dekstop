@@ -406,6 +406,24 @@ func TestPrivacyModeCoversStickersAndRevealsOnlyTheirMessage(t *testing.T) {
 	}
 }
 
+func TestPrivacyModeCoversDocumentPreviewsAndQuotedMedia(t *testing.T) {
+	script := getInitScript("test-agent")
+	checks := []string{
+		`[role="row"] img:not([data-emoji])`,
+		`[role="row"] canvas`,
+		`[role="row"] iframe`,
+		`[role="row"] [style*="background-image"]`,
+		`[data-testid="quoted-message"]`,
+		`[role="row"]:hover img`,
+		`[role="row"]:hover [data-testid="quoted-message"]`,
+	}
+	for _, want := range checks {
+		if !strings.Contains(script, want) {
+			t.Errorf("privacy attachment/reply handling is missing %q", want)
+		}
+	}
+}
+
 func TestPrivacyModeCoversArchivedChatsAndAllAvatarVariants(t *testing.T) {
 	script := getInitScript("test-agent")
 	checks := []string{
