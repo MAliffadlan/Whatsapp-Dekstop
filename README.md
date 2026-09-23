@@ -26,7 +26,7 @@ Get the latest stable release for your operating system (updated automatically):
 | :--- | :--- | :--- | :--- |
 | **macOS** | [**Universal DMG**](https://github.com/vianziro/Whatsapp-Dekstop/releases/latest/download/WhatsApp-Desk-macOS-Universal.dmg) | [Universal ZIP](https://github.com/vianziro/Whatsapp-Dekstop/releases/latest/download/WhatsApp-Desk-macOS-Universal.zip) | macOS 11.0+ (Apple Silicon & Intel) |
 | **Windows 10 / 11** | [**Setup Wizard (.exe)**](https://github.com/vianziro/Whatsapp-Dekstop/releases/latest/download/WhatsApp-Desk-Windows-x64-Setup.exe) | [Portable EXE](https://github.com/vianziro/Whatsapp-Dekstop/releases/latest/download/WhatsAppDesk.exe) | Windows 10/11 x64 (WebView2 runtime) |
-| **Linux** | [**Browse Releases (DEB / RPM)**](https://github.com/vianziro/Whatsapp-Dekstop/releases) | [tar.gz Archives](https://github.com/vianziro/Whatsapp-Dekstop/releases) | GTK 3 & WebKitGTK |
+| **Linux** | [**Build from source**](#️-building--releasing) | [older releases (≤ v1.5.9.2)](https://github.com/vianziro/Whatsapp-Dekstop/releases) | GTK 3 & WebKitGTK 4.0 / 4.1 |
 
 > [!TIP]
 > Download links point automatically to the latest release assets. You can also view all past versions and architectures on the [Releases](https://github.com/vianziro/Whatsapp-Dekstop/releases) page.
@@ -97,6 +97,15 @@ sudo apt-get install -f
 sudo dnf install ./WhatsApp-Desk-Fedora-x64.rpm
 ```
 
+> [!NOTE]
+> **Ubuntu 24.04 (Noble), Linux Mint 22.x:** these ship WebKitGTK 4.1 only, while the
+> default `WhatsApp-Desk-Linux-*.deb` links `libwebkit2gtk-4.0.so.37` and fails with
+> `cannot open shared object file` (issues #8, #9). Linux packages are not published on the
+> Releases page (see [Building & Releasing](#️-building--releasing)), so build the 4.1 variant
+> from source: `WA_DESK_WEBKIT=4.1 bash build_linux.sh`. Verify with:
+> `ldd dist_linux/whatsapp-desk | grep webkit` (expect `libwebkit2gtk-4.1.so.0`)
+> and `dpkg-deb -f <deb> Depends` (expect `libwebkit2gtk-4.1-0`).
+
 ### Verifying Release Integrity
 
 Every release ships with a signed [SHA256SUMS](https://github.com/vianziro/Whatsapp-Dekstop/releases/latest/download/SHA256SUMS) checksum list:
@@ -145,9 +154,9 @@ keeps the release path independent of any runner account and makes every
 published artifact reproducible on the maintainer's machine.
 
 ```bash
-bash release.sh --check          # verify the toolchain
-bash release.sh 1.5.9.7 --dry-run # build and checksum, publish nothing
-bash release.sh 1.5.9.7          # build, publish, and verify the download
+bash release.sh --check           # verify the toolchain
+bash release.sh 1.5.9.8 --dry-run # build and checksum, publish nothing
+bash release.sh 1.5.9.8           # build, publish, and verify the download
 ```
 
 `release.sh` refuses to publish unless `updater.go` already declares the same

@@ -19,6 +19,10 @@ Version numbers are declared in exactly one place — `appVersion` in `updater.g
 
 ## [Unreleased]
 
+## [1.5.9.8] - 2026-09-22
+
+> Click Recovery, Multi-File Upload Hardening & WebKitGTK 4.1
+
 Six pull requests contributed by [@MAliffadlan](https://github.com/MAliffadlan) land here
 together, with the macOS and spreadsheet-preview follow-ups they needed to be mergeable.
 
@@ -42,8 +46,10 @@ together, with the macOS and spreadsheet-preview follow-ups they needed to be me
 
 ### Fixed
 
-- Keep the Archived navigation row visible while blurring actual chat rows in Privacy Mode.
-- Blur chat rows in the Archived Chats view when Privacy Mode is enabled (#50).
+- Linux: opt-in WebKitGTK 4.1 build variant (`WA_DESK_WEBKIT=4.1`) for Ubuntu 24.04,
+  Linux Mint 22.x and current Fedora, with `-webkit4.1` artifacts and honest DEB
+  `Depends`. The default 4.0 build is unchanged. Related to #8, #9.
+- Keep the Archived navigation row visible while blurring actual chat rows in Privacy Mode (#50).
 - Linux: the StatusNotifierItem tray properties no longer abort the process on launch on
   desktops with a tray watcher (#48).
 - `wa_crash.log` rotates past 1 MB with a single backup, so a crash loop can no longer grow it
@@ -51,6 +57,17 @@ together, with the macOS and spreadsheet-preview follow-ups they needed to be me
 - macOS: the download-folder blocklist and the preview-directory check resolved only one side
   of the comparison, so symlinked prefixes such as `/etc` and `/var` were never matched
   (follow-up to #44).
+- A file drop that hit an excluded target (a dialog, the settings modal) or arrived with an
+  empty file list — cloud placeholder files such as OneDrive's are the common case — left the
+  drag-over highlight class stuck. That class disables pointer events across the whole app, so
+  clicks stopped responding (including selecting a contact from the @mention popup) while
+  typing and Enter kept working, until the app was restarted. The drag state is now reset on
+  every drop and again on `dragend` and window blur.
+- The drop fallback that waits for WhatsApp's native editor used a single 400 ms check; when
+  the editor mounted slower than that — common on Windows — the app injected the dropped files
+  a second time over the batch WhatsApp had already accepted, which could leave only one file
+  in the editor. The fallback now probes for several rounds and only injects when no editor
+  appeared during the whole window.
 
 ---
 
@@ -516,7 +533,8 @@ First production release under the WhatsApp Desk name.
 
 ---
 
-[Unreleased]: https://github.com/vianziro/Whatsapp-Dekstop/compare/v1.5.9.7...HEAD
+[Unreleased]: https://github.com/vianziro/Whatsapp-Dekstop/compare/v1.5.9.8...HEAD
+[1.5.9.8]: https://github.com/vianziro/Whatsapp-Dekstop/compare/v1.5.9.7...v1.5.9.8
 [1.5.9.7]: https://github.com/vianziro/Whatsapp-Dekstop/compare/v1.5.9.6...v1.5.9.7
 [1.5.9.6]: https://github.com/vianziro/Whatsapp-Dekstop/compare/v1.5.9.5...v1.5.9.6
 [1.5.9.5]: https://github.com/vianziro/Whatsapp-Dekstop/compare/v1.5.9.4...v1.5.9.5

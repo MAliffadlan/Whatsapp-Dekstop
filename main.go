@@ -877,15 +877,27 @@ func getInitScript(ua string) string {
 				return false;
 			}
 
+			function clearDragVisualState() {
+				dragCounter = 0;
+				var dz = getDropZone();
+				if (dz) dz.classList.remove('wa-drag-over');
+			}
+
 			function handleDrop(e) {
+				// Reset the drag visual state on EVERY drop, before any early
+				// return. The wa-drag-over class sets pointer-events:none on
+				// every element, so a drop that lands on an excluded target
+				// (a dialog, the settings modal) or arrives with an empty
+				// file list (cloud placeholder files, e.g. OneDrive on
+				// Windows) used to leave the class stuck until reload — every
+				// click in the app went dead, including selecting a contact
+				// from the @mention popup, while typing and Enter kept
+				// working.
+				clearDragVisualState();
 				if (!isFileDrag(e) || !isChatDrop(e) || dropInProgress) return;
 
 				var files = Array.prototype.slice.call((e.dataTransfer && e.dataTransfer.files) || []);
 				if (!files || files.length === 0) return;
-
-				dragCounter = 0;
-				var dz = getDropZone();
-				if (dz) dz.classList.remove('wa-drag-over');
 
 				var isMedia = areAllMediaFiles(files);
 
@@ -896,17 +908,25 @@ func getInitScript(ua string) string {
 				// Do NOT stopImmediatePropagation so WhatsApp's native drop handler
 				// on #main / conversation-panel receives the drop event for BOTH
 				// media (photos/videos) and documents (PDF, Office, etc.).
-				// Fallback: If WhatsApp's native modal has not opened after a delay,
-				// attempt programmatic injection.
-				setTimeout(function() {
+				// Fallback: if WhatsApp's native editor has not appeared after a
+				// few probes, attempt programmatic injection. A single 400ms
+				// check raced the editor mount on slower machines and injected a
+				// second batch over the native one, so probe several rounds and
+				// only inject when no editor has shown up the whole time.
+				var waNativeEditorChecks = 0;
+				var waNativeEditorPoll = setInterval(function() {
+					waNativeEditorChecks++;
 					var modalOpen = document.querySelector(
 						'[data-testid="media-editor"], [data-testid="image-editor"], ' +
 						'[data-testid="drawer-middle"], [role="dialog"], [data-animate-modal-popup="true"]'
 					);
-					if (!modalOpen) {
-						injectFiles(files, 0, isMedia);
+					if (modalOpen || waNativeEditorChecks >= 4) {
+						clearInterval(waNativeEditorPoll);
+						if (!modalOpen) {
+							injectFiles(files, 0, isMedia);
+						}
 					}
-				}, 400);
+				}, 350);
 			}
 
 			// File-picker uploads do not pass through the drag/drop handler above.
@@ -923,6 +943,11 @@ func getInitScript(ua string) string {
 			document.addEventListener('dragleave', handleDragLeave, true);
 			document.addEventListener('dragover', handleDragOver, true);
 			document.addEventListener('drop', handleDrop, true);
+			// Safety nets: a drag that never produces a matching dragleave
+			// (cancelled via Esc, source outside the page, or the window
+			// losing focus mid-drag) must not leave the class behind.
+			document.addEventListener('dragend', clearDragVisualState, true);
+			window.addEventListener('blur', clearDragVisualState);
 			document.addEventListener('change', handleFileInputChange, true);
 		});
 
