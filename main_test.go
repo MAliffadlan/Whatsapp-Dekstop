@@ -339,8 +339,21 @@ func TestPrivacyModeUsesVisualBlurWithChatListHoverUnblur(t *testing.T) {
 		"data-wa-privacy-hover",
 		"data-wa-privacy-reveal",
 		"function privacyChatRowFromTarget(target)",
+		"function isPrivacyArchivedInfo(target)",
+		"if (!isPrivacyArchivedInfo(revealed[i])",
+		"if (isPrivacyArchivedInfo(revealTargets[i])) continue",
 		"function markPrivacyHoverRow(row)",
 		"function updatePrivacyHoverFromTarget(target)",
+		"data-wa-privacy-chat-row",
+		"data-wa-privacy-avatar",
+		"function markPrivacyAvatarTargets(row, avatarSelector)",
+		"WhatsApp renders initials as text inside a circular slot",
+		"Clear stale reveal markers globally",
+		"function markPrivacyChatRows()",
+		"function markArchivedPrivacyViews()",
+		"function scheduleArchivedPrivacyMark()",
+		"[0, 100, 300]",
+		"!row.matches('[data-testid=\"cell-frame-container\"], div._ak8l')",
 		"setProperty('filter', 'none', 'important')",
 		"div._ak8l",
 	} {
@@ -357,8 +370,8 @@ func TestPrivacyModeUsesVisualBlurWithChatListHoverUnblur(t *testing.T) {
 	if strings.Contains(script, "#pane-side [role=\"row\"]:hover span") {
 		t.Fatal("chat-list privacy reveal must not depend on broad row hover selectors")
 	}
-	if !strings.Contains(script, "#pane-side [role=\"row\"] span,") {
-		t.Fatal("chat-list timestamps must be included in the privacy blur layer")
+	if !strings.Contains(script, "[data-wa-privacy-chat-row=\"1\"] span,") {
+		t.Fatal("chat-list timestamps must be included in the marked chat-row blur layer")
 	}
 	if !strings.Contains(script, "row.querySelectorAll('span, ._ak8q") {
 		t.Fatal("hover reveal must include timestamp spans")
@@ -375,26 +388,80 @@ func TestPrivacyModeCopyMatchesTimestampBlurBehavior(t *testing.T) {
 	}
 }
 
+func TestPrivacyModeCoversStickersAndRevealsOnlyTheirMessage(t *testing.T) {
+	script := getInitScript("test-agent")
+	checks := []string{
+		`[data-testid="sticker-container"]`,
+		`[data-testid="animated-sticker"]`,
+		`img[src*=".webp"][data-testid*="sticker" i]`,
+		`[data-testid="msg-container"]:hover [data-testid="sticker-container"]`,
+		`.message-in:hover [data-testid="sticker-container"]`,
+		`.message-out:hover [data-testid="sticker-container"]`,
+		`[role="row"]:hover [data-testid="sticker-container"]`,
+	}
+	for _, want := range checks {
+		if !strings.Contains(script, want) {
+			t.Errorf("privacy sticker handling is missing %q", want)
+		}
+	}
+}
+
+func TestPrivacyModeCoversDocumentPreviewsAndQuotedMedia(t *testing.T) {
+	script := getInitScript("test-agent")
+	checks := []string{
+		`[role="row"] img:not([data-emoji])`,
+		`[role="row"] canvas`,
+		`[role="row"] iframe`,
+		`[role="row"] [style*="background-image"]`,
+		`[data-testid="quoted-message"]`,
+		`[role="row"]:hover img`,
+		`[role="row"]:hover [data-testid="quoted-message"]`,
+	}
+	for _, want := range checks {
+		if !strings.Contains(script, want) {
+			t.Errorf("privacy attachment/reply handling is missing %q", want)
+		}
+	}
+}
+
 func TestPrivacyModeCoversArchivedChatsAndAllAvatarVariants(t *testing.T) {
 	script := getInitScript("test-agent")
 	checks := []string{
-		// Sidebar & Archived chats text protection
-		"#side [role=\"row\"] span",
-		"#side [role=\"listitem\"] span",
-		"div[aria-label*=\"Archived\" i]",
-		// Avatar blur covers images, svg images, avatar container _ak8h, and default user SVGs
-		".privacy-mode.blur-avatars #side img",
-		".privacy-mode.blur-avatars #side image",
-		".privacy-mode.blur-avatars #side ._ak8h",
-		".privacy-mode.blur-avatars #side [data-testid=\"default-user\"]",
-		".privacy-mode.blur-avatars #side svg[viewBox=\"0 0 49 49\"]",
-		".privacy-mode.blur-avatars #side div.x78zum5 > div.x6s0dn4 > div",
+		// Sidebar and archived rows are marked only when they contain chat text and an avatar.
+		"[data-wa-privacy-chat-row=\"1\"] span",
+		"[data-wa-privacy-archived-row=\"1\"] span",
+		"var avatarSelector = 'img, image, ._ak8h",
+		"[data-testid*=\"avatar\" i]",
+		"svg[viewBox=\"0 0 49 49\"]'",
+		"[data-wa-privacy-avatar=\"1\"]",
+		"data-wa-privacy-archived-info",
+		"function markArchivedInfo(view)",
+		"candidate.style.setProperty('filter', 'none', 'important')",
+		"replace(/\\s+/g, ' ')",
+		"PRIVACY_ARCHIVED_LABEL_RE",
+		"PRIVACY_ARCHIVED_INFO_RE",
+		"privacyIsArchivedNavigationText",
+		"privacyIsArchivedInfoText",
+		"function privacyLooksLikeArchivedView(anchor)",
+		"[data-icon=\"default-user\"]",
+		"These chats stay archived when new messages are received",
+		"function isArchivedChatRow(row)",
+		"function isPrivacySidebarControl(node)",
+		"data-wa-privacy-archive-control",
+		"control.removeAttribute('data-wa-privacy-chat-row')",
+		"var archivedLabels = document.querySelectorAll('#side span, #pane-side span, #side [role=\"button\"], #pane-side [role=\"button\"]')",
+		"labelParent.clientHeight >= 40",
+		"function forceArchivedControlVisible()",
+		"control.getBoundingClientRect",
+		"control.style.setProperty('filter', 'none', 'important')",
+		"var archiveIcons = document.querySelectorAll('[data-icon*=\"archive\" i]",
+		"icon.style.setProperty('filter', 'none', 'important')",
+		"new MutationObserver(function()",
+		"observePrivacySidebar()",
+		"function schedulePrivacySidebarRefresh()",
+		"clearTimeout(privacySidebarRefreshTimer)",
+		"data-wa-privacy-archived-info-checked",
 		".privacy-mode.blur-avatars #main header ._ak8h",
-		// Symmetrical hover unblur for row peek and direct avatar hover
-		"#side [role=\"row\"]:hover ._ak8h",
-		"#side [role=\"row\"]:hover image",
-		"#side ._ak8h:hover",
-		"#side ._ak8h:hover *",
 		// Sparing timestamps in #side (including archived view)
 		"tagTimesIn(document.getElementById('side') || document.getElementById('pane-side'))",
 	}
@@ -402,6 +469,24 @@ func TestPrivacyModeCoversArchivedChatsAndAllAvatarVariants(t *testing.T) {
 		if !strings.Contains(script, want) {
 			t.Errorf("privacy rules missing required coverage for %q", want)
 		}
+	}
+	if strings.Contains(script, "[role=\"button\"] > div:first-child") {
+		t.Fatal("avatar privacy must not blur generic button child containers")
+	}
+	if strings.Contains(script, "var avatarSelector = 'img, image, ._ak8h, [data-testid=\"default-user\"], [data-testid*=\"avatar\" i], [data-icon=\"default-user\"], [data-icon=\"default-group\"], svg[viewBox=\"0 0 49 49\"], [style*=\"background-image\"]") {
+		t.Fatal("avatar privacy must not use a broad background-image selector")
+	}
+	if strings.Contains(script, "div.x78zum5 > div.x6s0dn4 > div") {
+		t.Fatal("avatar privacy must not blur unstable layout containers")
+	}
+	if strings.Contains(script, ".privacy-mode.blur-avatars #side [role=\"row\"]:hover img") {
+		t.Fatal("sidebar avatar reveal must not depend on broad parent hover selectors")
+	}
+	if strings.Contains(script, "markArchivedInfo(document.body)") {
+		t.Fatal("archived guidance must not scan the whole document")
+	}
+	if strings.Contains(script, "#side span, #side div, #pane-side span, #pane-side div") {
+		t.Fatal("archived privacy must not repeatedly scan every sidebar div")
 	}
 }
 
@@ -451,6 +536,23 @@ func TestUpdateProgressKeepsStatusTextInSync(t *testing.T) {
 	} {
 		if !strings.Contains(progress, want) {
 			t.Errorf("update progress handler is missing %q", want)
+		}
+	}
+}
+
+func TestUpdateBannerReservesLayoutSpace(t *testing.T) {
+	script := getInitScript("test-agent")
+	for _, want := range []string{
+		"html.wa-update-visible #app",
+		"--wa-update-banner-height",
+		"banner.offsetHeight",
+		"layoutRoot.classList.add('wa-update-visible')",
+		"bannerResizeObserver.disconnect()",
+		"document.documentElement.classList.remove('wa-update-visible')",
+		"document.documentElement.style.removeProperty('--wa-update-banner-height')",
+	} {
+		if !strings.Contains(script, want) {
+			t.Errorf("update banner layout compensation is missing %q", want)
 		}
 	}
 }
