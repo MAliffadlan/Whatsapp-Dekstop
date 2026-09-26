@@ -1752,26 +1752,31 @@ func getInitScript(ua string) string {
 				// Chat-list timestamps are included in this blur layer.
 				// Covers #side generally (including Archived chats drawer & filtered views)
 				// as well as #pane-side and modern aria/data-testid containers.
-				'.privacy-mode #side [role="row"] span,',
-				'.privacy-mode #side [role="listitem"] span,',
-				'.privacy-mode #side [data-testid="cell-frame-container"] span,',
-				'.privacy-mode #side div[tabindex="-1"] span,',
-				'.privacy-mode #side div._ak8l span,',
-				'.privacy-mode #side ._ak8q,',
-				'.privacy-mode #side ._ak8k,',
-				'.privacy-mode #pane-side [role="row"] span,',
-				'.privacy-mode #pane-side [role="listitem"] span,',
-				'.privacy-mode #pane-side [data-testid="cell-frame-container"] span,',
-				'.privacy-mode #pane-side div[tabindex="-1"] span,',
-				'.privacy-mode #pane-side ._ak8q,',
-				'.privacy-mode #pane-side ._ak8k,',
-				'.privacy-mode [data-testid="chat-list"] [role="row"] span,',
-				'.privacy-mode [data-testid="chat-list"] [role="listitem"] span,',
-				'.privacy-mode [data-testid="chat-list"] [data-testid="cell-frame-container"] span,',
-				'.privacy-mode [data-testid="chat-list"] div[tabindex="-1"] span,',
-				'.privacy-mode div[aria-label="Chat list"] span,',
-				'.privacy-mode div[aria-label*="Archived" i] span',
+				'.privacy-mode [data-wa-privacy-chat-row="1"] span,',
+				'.privacy-mode [data-wa-privacy-chat-row="1"] ._ak8q,',
+				'.privacy-mode [data-wa-privacy-chat-row="1"] ._ak8k,',
+				'.privacy-mode [data-wa-privacy-archived-row="1"] span,',
+				'.privacy-mode [data-wa-privacy-archived-row="1"] ._ak8q,',
+				'.privacy-mode [data-wa-privacy-archived-row="1"] ._ak8k',
 				'{ filter: blur(6px) !important; transition: filter 0.15s ease-out !important; }',
+				// The Archived view explanation is UI guidance, not private chat data.
+				'.privacy-mode [data-wa-privacy-archived-info="1"],',
+				'.privacy-mode [data-wa-privacy-archived-info="1"] *',
+				'{ filter: none !important; }',
+				'.privacy-mode [data-wa-privacy-archive-control="1"],',
+				'.privacy-mode [data-wa-privacy-archive-control="1"] *',
+				'{ filter: none !important; }',
+				'.privacy-mode.blur-avatars [data-wa-privacy-avatar="1"]',
+				'{ filter: blur(12px) !important; transition: filter 0.15s ease-out !important; }',
+				'.privacy-mode.blur-avatars [data-wa-privacy-archived-row="1"] img,',
+				'.privacy-mode.blur-avatars [data-wa-privacy-archived-row="1"] image,',
+				'.privacy-mode.blur-avatars [data-wa-privacy-archived-row="1"] ._ak8h,',
+				'.privacy-mode.blur-avatars [data-wa-privacy-archived-row="1"] [data-testid*="avatar" i],',
+				'.privacy-mode.blur-avatars [data-wa-privacy-archived-row="1"] [data-testid="default-user"],',
+				'.privacy-mode.blur-avatars [data-wa-privacy-archived-row="1"] [data-icon="default-user"],',
+				'.privacy-mode.blur-avatars [data-wa-privacy-archived-row="1"] [data-icon="default-group"],',
+				'.privacy-mode.blur-avatars [data-wa-privacy-archived-row="1"] svg[viewBox="0 0 49 49"]',
+				'{ filter: blur(12px) !important; transition: filter 0.15s ease-out !important; }',
 				// Hovering any row or container restores its contents instantly.
 				'.privacy-mode [data-wa-privacy-hover="1"] span,',
 				'.privacy-mode [data-wa-privacy-hover="1"] ._ak8q,',
@@ -1791,22 +1796,68 @@ func getInitScript(ua string) string {
 				'.privacy-mode #main .message-in span:hover,',
 				'.privacy-mode #main .message-out span:hover',
 				'{ filter: none !important; }',
-				// In-chat photos/videos hide with blur; hover restores symmetrically.
+				// In-chat media previews hide with blur; cover the stable message row
+				// too because document thumbnails and quoted media may sit outside the
+				// older message-in/message-out wrappers.
 				'.privacy-mode #main [data-testid="msg-container"] img:not([data-emoji]),',
 				'.privacy-mode #main [data-testid="msg-container"] video,',
+				'.privacy-mode #main [data-testid="msg-container"] canvas,',
 				'.privacy-mode #main .message-in img:not([data-emoji]),',
 				'.privacy-mode #main .message-in video,',
+				'.privacy-mode #main .message-in canvas,',
 				'.privacy-mode #main .message-out img:not([data-emoji]),',
-				'.privacy-mode #main .message-out video',
+				'.privacy-mode #main .message-out video,',
+				'.privacy-mode #main .message-out canvas,',
+				'.privacy-mode #main [role="row"] img:not([data-emoji]),',
+				'.privacy-mode #main [role="row"] image,',
+				'.privacy-mode #main [role="row"] video,',
+				'.privacy-mode #main [role="row"] canvas,',
+				'.privacy-mode #main [role="row"] iframe,',
+				'.privacy-mode #main [role="row"] [style*="background-image"],',
+				'.privacy-mode #main [role="row"] [data-testid="quoted-message"]',
 				'{ filter: blur(12px) !important; transition: filter 0.15s ease-out !important; }',
 				'.privacy-mode #main [data-testid="msg-container"]:hover img,',
 				'.privacy-mode #main [data-testid="msg-container"]:hover video,',
+				'.privacy-mode #main [data-testid="msg-container"]:hover canvas,',
 				'.privacy-mode #main .message-in:hover img,',
 				'.privacy-mode #main .message-in:hover video,',
+				'.privacy-mode #main .message-in:hover canvas,',
 				'.privacy-mode #main .message-out:hover img,',
 				'.privacy-mode #main .message-out:hover video,',
+				'.privacy-mode #main .message-out:hover canvas,',
+				'.privacy-mode #main [role="row"]:hover img,',
+				'.privacy-mode #main [role="row"]:hover image,',
+				'.privacy-mode #main [role="row"]:hover video,',
+				'.privacy-mode #main [role="row"]:hover canvas,',
+				'.privacy-mode #main [role="row"]:hover iframe,',
+				'.privacy-mode #main [role="row"]:hover [style*="background-image"],',
+				'.privacy-mode #main [role="row"]:hover [data-testid="quoted-message"],',
 				'.privacy-mode #main [data-testid="msg-container"] img:hover,',
-				'.privacy-mode #main [data-testid="msg-container"] video:hover',
+				'.privacy-mode #main [data-testid="msg-container"] video:hover,',
+				'.privacy-mode #main [data-testid="msg-container"] canvas:hover',
+				'{ filter: none !important; }',
+				// Stickers use dedicated containers (and canvases for animated stickers),
+				// so they need their own blur layer instead of relying on photo selectors.
+				'.privacy-mode #main [data-testid="sticker-container"],',
+				'.privacy-mode #main [data-testid="animated-sticker"],',
+				'.privacy-mode #main img[src*=".webp"][data-testid*="sticker" i]',
+				'{ filter: blur(12px) !important; transition: filter 0.15s ease-out !important; }',
+				'.privacy-mode #main [data-testid="sticker-container"]:hover,',
+				'.privacy-mode #main [data-testid="sticker-container"]:hover *,',
+				'.privacy-mode #main [data-testid="msg-container"]:hover [data-testid="sticker-container"],',
+				'.privacy-mode #main [data-testid="msg-container"]:hover [data-testid="animated-sticker"],',
+				'.privacy-mode #main [data-testid="msg-container"]:hover img[src*=".webp"][data-testid*="sticker" i],',
+				'.privacy-mode #main .message-in:hover [data-testid="sticker-container"],',
+				'.privacy-mode #main .message-in:hover [data-testid="animated-sticker"],',
+				'.privacy-mode #main .message-in:hover img[src*=".webp"][data-testid*="sticker" i],',
+				'.privacy-mode #main .message-out:hover [data-testid="sticker-container"],',
+				'.privacy-mode #main .message-out:hover [data-testid="animated-sticker"],',
+				'.privacy-mode #main .message-out:hover img[src*=".webp"][data-testid*="sticker" i],',
+				'.privacy-mode #main [role="row"]:hover [data-testid="sticker-container"],',
+				'.privacy-mode #main [role="row"]:hover [data-testid="animated-sticker"],',
+				'.privacy-mode #main [role="row"]:hover img[src*=".webp"][data-testid*="sticker" i],',
+				'.privacy-mode #main [data-testid="animated-sticker"]:hover,',
+				'.privacy-mode #main img[src*=".webp"][data-testid*="sticker" i]:hover',
 				'{ filter: none !important; }',
 				// Layer 3: conversation header name/status, hover to reveal.
 				'.privacy-mode #main header span:not([data-wa-time])',
@@ -1826,9 +1877,6 @@ func getInitScript(ua string) string {
 				'.privacy-mode.blur-avatars #side [data-icon="default-group"],',
 				'.privacy-mode.blur-avatars #side [data-icon="community-outline"],',
 				'.privacy-mode.blur-avatars #side svg[viewBox="0 0 49 49"],',
-				'.privacy-mode.blur-avatars #side [role="row"] [role="button"] > div:first-child,',
-				'.privacy-mode.blur-avatars #side [role="listitem"] [role="button"] > div:first-child,',
-				'.privacy-mode.blur-avatars #side div.x78zum5 > div.x6s0dn4 > div,',
 				'.privacy-mode.blur-avatars #pane-side img,',
 				'.privacy-mode.blur-avatars #pane-side image,',
 				'.privacy-mode.blur-avatars #pane-side ._ak8h,',
@@ -1860,76 +1908,8 @@ func getInitScript(ua string) string {
 				'.privacy-mode.blur-avatars div[role="dialog"] ._ak8h,',
 				'.privacy-mode.blur-avatars div[role="dialog"] img',
 				'{ filter: blur(12px) !important; transition: filter 0.15s ease-out !important; }',
-				// Symmetrical unblur on hovering row, item, or the avatar directly.
-				'.privacy-mode.blur-avatars #side [role="row"]:hover img,',
-				'.privacy-mode.blur-avatars #side [role="row"]:hover image,',
-				'.privacy-mode.blur-avatars #side [role="row"]:hover ._ak8h,',
-				'.privacy-mode.blur-avatars #side [role="row"]:hover [data-testid="default-user"],',
-				'.privacy-mode.blur-avatars #side [role="row"]:hover [data-icon="default-user"],',
-				'.privacy-mode.blur-avatars #side [role="row"]:hover svg[viewBox="0 0 49 49"],',
-				'.privacy-mode.blur-avatars #side [role="row"]:hover [role="button"] > div:first-child,',
-				'.privacy-mode.blur-avatars #side [role="row"]:hover div.x78zum5 > div.x6s0dn4 > div,',
-				'.privacy-mode.blur-avatars #side [role="listitem"]:hover img,',
-				'.privacy-mode.blur-avatars #side [role="listitem"]:hover image,',
-				'.privacy-mode.blur-avatars #side [role="listitem"]:hover ._ak8h,',
-				'.privacy-mode.blur-avatars #side [role="listitem"]:hover [data-testid="default-user"],',
-				'.privacy-mode.blur-avatars #side [role="listitem"]:hover svg[viewBox="0 0 49 49"],',
-				'.privacy-mode.blur-avatars #side [role="listitem"]:hover [role="button"] > div:first-child,',
-				'.privacy-mode.blur-avatars #side [data-testid="cell-frame-container"]:hover img,',
-				'.privacy-mode.blur-avatars #side [data-testid="cell-frame-container"]:hover image,',
-				'.privacy-mode.blur-avatars #side [data-testid="cell-frame-container"]:hover ._ak8h,',
-				'.privacy-mode.blur-avatars #side div[tabindex="-1"]:hover img,',
-				'.privacy-mode.blur-avatars #side div[tabindex="-1"]:hover image,',
-				'.privacy-mode.blur-avatars #side div[tabindex="-1"]:hover ._ak8h,',
-				'.privacy-mode.blur-avatars #side div._ak8l:hover img,',
-				'.privacy-mode.blur-avatars #side div._ak8l:hover image,',
-				'.privacy-mode.blur-avatars #side div._ak8l:hover ._ak8h,',
-				'.privacy-mode.blur-avatars #side img:hover,',
-				'.privacy-mode.blur-avatars #side image:hover,',
-				'.privacy-mode.blur-avatars #side ._ak8h:hover,',
-				'.privacy-mode.blur-avatars #side ._ak8h:hover *,',
-				'.privacy-mode.blur-avatars #side [data-testid="default-user"]:hover,',
-				'.privacy-mode.blur-avatars #side svg[viewBox="0 0 49 49"]:hover,',
-				'.privacy-mode.blur-avatars #pane-side [role="row"]:hover img,',
-				'.privacy-mode.blur-avatars #pane-side [role="row"]:hover image,',
-				'.privacy-mode.blur-avatars #pane-side [role="row"]:hover ._ak8h,',
-				'.privacy-mode.blur-avatars #pane-side [role="listitem"]:hover img,',
-				'.privacy-mode.blur-avatars #pane-side [role="listitem"]:hover image,',
-				'.privacy-mode.blur-avatars #pane-side [role="listitem"]:hover ._ak8h,',
-				'.privacy-mode.blur-avatars #pane-side [data-testid="cell-frame-container"]:hover img,',
-				'.privacy-mode.blur-avatars #pane-side [data-testid="cell-frame-container"]:hover image,',
-				'.privacy-mode.blur-avatars #pane-side [data-testid="cell-frame-container"]:hover ._ak8h,',
-				'.privacy-mode.blur-avatars #pane-side div[tabindex="-1"]:hover img,',
-				'.privacy-mode.blur-avatars #pane-side div[tabindex="-1"]:hover image,',
-				'.privacy-mode.blur-avatars #pane-side div[tabindex="-1"]:hover ._ak8h,',
-				'.privacy-mode.blur-avatars #pane-side div._ak8l:hover img,',
-				'.privacy-mode.blur-avatars #pane-side div._ak8l:hover image,',
-				'.privacy-mode.blur-avatars #pane-side div._ak8l:hover ._ak8h,',
-				'.privacy-mode.blur-avatars #pane-side img:hover,',
-				'.privacy-mode.blur-avatars #pane-side image:hover,',
-				'.privacy-mode.blur-avatars #pane-side ._ak8h:hover,',
-				'.privacy-mode.blur-avatars #pane-side ._ak8h:hover *,',
-				'.privacy-mode.blur-avatars [data-testid="chat-list"] [role="row"]:hover img,',
-				'.privacy-mode.blur-avatars [data-testid="chat-list"] [role="row"]:hover image,',
-				'.privacy-mode.blur-avatars [data-testid="chat-list"] [role="row"]:hover ._ak8h,',
-				'.privacy-mode.blur-avatars [data-testid="chat-list"] [role="listitem"]:hover img,',
-				'.privacy-mode.blur-avatars [data-testid="chat-list"] [role="listitem"]:hover image,',
-				'.privacy-mode.blur-avatars [data-testid="chat-list"] [role="listitem"]:hover ._ak8h,',
-				'.privacy-mode.blur-avatars [data-testid="chat-list"] [data-testid="cell-frame-container"]:hover img,',
-				'.privacy-mode.blur-avatars [data-testid="chat-list"] [data-testid="cell-frame-container"]:hover image,',
-				'.privacy-mode.blur-avatars [data-testid="chat-list"] [data-testid="cell-frame-container"]:hover ._ak8h,',
-				'.privacy-mode.blur-avatars [data-testid="chat-list"] div[tabindex="-1"]:hover img,',
-				'.privacy-mode.blur-avatars [data-testid="chat-list"] div[tabindex="-1"]:hover image,',
-				'.privacy-mode.blur-avatars [data-testid="chat-list"] div[tabindex="-1"]:hover ._ak8h,',
-				'.privacy-mode.blur-avatars div[aria-label="Chat list"] [role="row"]:hover img,',
-				'.privacy-mode.blur-avatars div[aria-label="Chat list"] [role="row"]:hover image,',
-				'.privacy-mode.blur-avatars div[aria-label="Chat list"] [role="row"]:hover ._ak8h,',
-				'.privacy-mode.blur-avatars div[aria-label*="Archived" i] [role="row"]:hover img,',
-				'.privacy-mode.blur-avatars div[aria-label*="Archived" i] [role="row"]:hover image,',
-				'.privacy-mode.blur-avatars div[aria-label*="Archived" i] [role="row"]:hover ._ak8h,',
-				'.privacy-mode.blur-avatars div[aria-label*="Archived" i] [role="listitem"]:hover img,',
-				'.privacy-mode.blur-avatars div[aria-label*="Archived" i] [role="listitem"]:hover image,',
-				'.privacy-mode.blur-avatars div[aria-label*="Archived" i] [role="listitem"]:hover ._ak8h,',
+				// Sidebar avatar reveal is marker-based so a broad parent hover cannot
+				// reveal avatars from neighboring chat rows.
 				'.privacy-mode.blur-avatars #main header:hover img,',
 				'.privacy-mode.blur-avatars #main header:hover image,',
 				'.privacy-mode.blur-avatars #main header:hover ._ak8h,',
@@ -1963,20 +1943,151 @@ func getInitScript(ua string) string {
 			].join('\n');
 
 			var activePrivacyHoverRow = null;
+			var PRIVACY_ARCHIVED_LABEL_RE = /^(Archived|Diarsipkan|Archiviert|Archivio|Archiviati|Archivados?|Archivadas?|Архив|已归档|封存)\b/i;
+			var PRIVACY_ARCHIVED_INFO_RE = /These chats stay archived when new messages are received|To change this experience, go to settings > chats on your phone|Obrolan ini tetap diarsipkan saat pesan baru diterima|Untuk mengubah pengalaman ini.*Pengaturan.*(Chat|Obrolan)/i;
+			function privacyIsArchivedNavigationText(text) {
+				return PRIVACY_ARCHIVED_LABEL_RE.test((text || '').replace(/\s+/g, ' ').trim());
+			}
+			function privacyIsArchivedInfoText(text) {
+				return PRIVACY_ARCHIVED_INFO_RE.test((text || '').replace(/\s+/g, ' ').trim());
+			}
+			function markPrivacyAvatarTargets(row, avatarSelector) {
+				var avatars = row.querySelectorAll(avatarSelector);
+				for (var a = 0; a < avatars.length; a++) avatars[a].setAttribute('data-wa-privacy-avatar', '1');
+				if (avatars.length) return;
+				// Some profile photos are CSS background images instead of img nodes.
+				// Restrict the fallback to a small square at the row's leading edge;
+				// never select a generic background-image container.
+				var rowRect = row.getBoundingClientRect ? row.getBoundingClientRect() : null;
+				if (!rowRect || rowRect.width <= 0 || rowRect.height <= 0) return;
+				var visualCandidates = row.querySelectorAll('div, span, [role="img"]');
+				for (var v = 0; v < visualCandidates.length; v++) {
+					var visual = visualCandidates[v];
+					var visualRect = visual.getBoundingClientRect ? visual.getBoundingClientRect() : null;
+					if (!visualRect || visualRect.width < 28 || visualRect.height < 28 || visualRect.width > 96 || visualRect.height > 96) continue;
+					if (Math.abs(visualRect.width - visualRect.height) > 18 || visualRect.left > rowRect.left + 96 || visualRect.top > rowRect.top + 24) continue;
+					var backgroundImage = '';
+					try { backgroundImage = window.getComputedStyle(visual).backgroundImage || ''; } catch (e) {}
+					if (backgroundImage === '' || backgroundImage === 'none') continue;
+					visual.setAttribute('data-wa-privacy-avatar', '1');
+					return;
+				}
+				// WhatsApp renders initials as text inside a circular slot instead of an img.
+				// The same geometry guard prevents the fallback from marking the row.
+				var initials = row.querySelectorAll('span, div');
+				for (var i = 0; i < initials.length; i++) {
+					var text = (initials[i].textContent || '').trim();
+					if (!/^[A-Za-z0-9]{1,3}$/.test(text)) continue;
+					var candidate = initials[i];
+					for (var depth = 0; candidate && candidate !== row && depth < 5; depth++, candidate = candidate.parentElement) {
+						var rect = candidate.getBoundingClientRect ? candidate.getBoundingClientRect() : null;
+						if (!rect || rect.width < 28 || rect.height < 28 || rect.width > 96 || rect.height > 96) continue;
+						if (Math.abs(rect.width - rect.height) > 18 || rect.left > rowRect.left + 96 || rect.top > rowRect.top + 24) continue;
+						candidate.setAttribute('data-wa-privacy-avatar', '1');
+						return;
+					}
+				}
+			}
+			function markPrivacyChatRows() {
+				var roots = document.querySelectorAll('#side, #pane-side, [data-testid="chat-list"], div[aria-label="Chat list"]');
+				var rowSelector = '[role="row"], [role="listitem"], [data-testid="cell-frame-container"], div._ak8l';
+				var avatarSelector = 'img, image, ._ak8h, [data-testid="default-user"], [data-testid*="avatar" i], [data-icon="default-user"], [data-icon="default-group"], svg[viewBox="0 0 49 49"]';
+				for (var r = 0; r < roots.length; r++) {
+					var rows = roots[r].querySelectorAll(rowSelector);
+					for (var i = 0; i < rows.length; i++) {
+						var row = rows[i];
+						var rowText = (row.textContent || '').trim();
+						if (privacyIsArchivedNavigationText(rowText) || row.querySelector('[data-icon*="archive" i], [data-testid*="archive" i], [aria-label*="archiv" i], [aria-label*="diarsip" i]')) continue;
+						if (row.querySelectorAll('span').length < 2 &&
+							!row.matches('[data-testid="cell-frame-container"], div._ak8l')) continue;
+						row.setAttribute('data-wa-privacy-chat-row', '1');
+						markPrivacyAvatarTargets(row, avatarSelector);
+					}
+				}
+				var archivedLabels = document.querySelectorAll('#side span, #pane-side span, #side [role="button"], #pane-side [role="button"]');
+				for (var l = 0; l < archivedLabels.length; l++) {
+					var label = archivedLabels[l];
+					if (!privacyIsArchivedNavigationText(label.textContent)) continue;
+					var labelParent = label;
+					for (var depth = 0; labelParent && depth < 8; depth++, labelParent = labelParent.parentElement) {
+						if (!privacyIsArchivedNavigationText(labelParent.textContent)) continue;
+						if (labelParent.clientHeight >= 40 || labelParent.querySelector('[data-icon*="archive" i], [data-testid*="archive" i]')) {
+							labelParent.removeAttribute('data-wa-privacy-chat-row');
+							labelParent.setAttribute('data-wa-privacy-archive-control', '1');
+							break;
+						}
+					}
+				}
+				var archiveNodes = document.querySelectorAll('[data-icon*="archive" i], [data-testid*="archive" i], [aria-label*="archiv" i], [aria-label*="diarsip" i]');
+				for (var n = 0; n < archiveNodes.length; n++) {
+					var control = archiveNodes[n];
+					while (control && control !== document.body) {
+						var controlText = (control.textContent || '').trim();
+						if (privacyIsArchivedNavigationText(controlText)) {
+							control.removeAttribute('data-wa-privacy-chat-row');
+							control.setAttribute('data-wa-privacy-archive-control', '1');
+							break;
+						}
+						control = control.parentElement;
+					}
+				}
+			}
+			function forceArchivedControlVisible() {
+				var labels = document.querySelectorAll('[data-wa-privacy-archive-control="1"]');
+				for (var i = 0; i < labels.length; i++) {
+					if (!privacyIsArchivedNavigationText(labels[i].textContent)) continue;
+					var control = labels[i];
+					for (var depth = 0; control && depth < 10; depth++, control = control.parentElement) {
+						var rect = control.getBoundingClientRect ? control.getBoundingClientRect() : null;
+						var isRow = control.matches && control.matches('[role="row"], [role="listitem"], [data-testid="cell-frame-container"], div[tabindex="-1"], div._ak8l');
+						if (!isRow && (!rect || rect.height < 40 || rect.width < 200)) continue;
+						control.removeAttribute('data-wa-privacy-chat-row');
+						control.setAttribute('data-wa-privacy-archive-control', '1');
+						control.style.setProperty('filter', 'none', 'important');
+						var children = control.querySelectorAll('*');
+						for (var c = 0; c < children.length; c++) children[c].style.setProperty('filter', 'none', 'important');
+						break;
+					}
+				}
+				var archiveIcons = document.querySelectorAll('[data-icon*="archive" i], [data-testid*="archive" i], [aria-label*="archiv" i], [aria-label*="diarsip" i]');
+				for (var a = 0; a < archiveIcons.length; a++) {
+					var icon = archiveIcons[a];
+					var iconRow = icon.closest && icon.closest('[role="row"], [role="listitem"], [data-testid="cell-frame-container"], div[tabindex="-1"], div._ak8l');
+					if (iconRow && privacyIsArchivedNavigationText(iconRow.textContent)) {
+						iconRow.removeAttribute('data-wa-privacy-chat-row');
+						iconRow.setAttribute('data-wa-privacy-archive-control', '1');
+						iconRow.style.setProperty('filter', 'none', 'important');
+					}
+					if (icon.matches && (icon.matches('[data-icon*="archive" i]') || icon.matches('[data-testid*="archive" i]') || icon.matches('[aria-label*="archiv" i]') || icon.matches('[aria-label*="diarsip" i]'))) {
+						icon.style.setProperty('filter', 'none', 'important');
+						icon.querySelectorAll('*').forEach(function(child) { child.style.setProperty('filter', 'none', 'important'); });
+					}
+				}
+			}
+			function isPrivacySidebarControl(node) {
+				if (!node || !node.matches) return false;
+				var text = (node.textContent || '').trim();
+				return privacyIsArchivedNavigationText(text) || !!node.querySelector('[data-icon*="archive" i], [data-testid*="archive" i], [aria-label*="archiv" i], [aria-label*="diarsip" i]');
+			}
 			function privacyChatListRootFromTarget(target) {
 				var node = target && target.nodeType === 1 ? target : null;
 				while (node && node !== document.body) {
 					if (node.id === 'pane-side' || node.id === 'side' ||
 						node.getAttribute('data-testid') === 'chat-list' ||
-						node.getAttribute('aria-label') === 'Chat list') return node;
+						node.getAttribute('aria-label') === 'Chat list' ||
+						node.getAttribute('data-wa-privacy-archived-view') === '1' ||
+						/(archiv|diarsip)/i.test(node.getAttribute('aria-label') || '')) return node;
 					node = node.parentElement;
 				}
 				return null;
 			}
 			function privacyChatRowFromTarget(target) {
+				if (isPrivacyArchivedInfo(target)) return null;
 				var listRoot = privacyChatListRootFromTarget(target);
 				var node = target && target.nodeType === 1 ? target : null;
 				while (node && node !== listRoot && node !== document.body) {
+					if (node.getAttribute && node.getAttribute('data-wa-privacy-archived-row') === '1') return node;
+					if (isPrivacySidebarControl(node)) return null;
 					if (node.matches && (node.matches('[role="row"]') ||
 						node.matches('[role="listitem"]') ||
 						node.matches('[data-testid="cell-frame-container"]') ||
@@ -1986,13 +2097,22 @@ func getInitScript(ua string) string {
 				}
 				return null;
 			}
+			function isPrivacyArchivedInfo(target) {
+				var node = target && target.nodeType === 1 ? target : null;
+				while (node && node !== document.body) {
+					if (node.getAttribute && node.getAttribute('data-wa-privacy-archived-info') === '1') return true;
+					node = node.parentElement;
+				}
+				return false;
+			}
 			function clearPrivacyHoverRow() {
-				if (!activePrivacyHoverRow) return;
-				activePrivacyHoverRow.removeAttribute('data-wa-privacy-hover');
-				var revealed = activePrivacyHoverRow.querySelectorAll('[data-wa-privacy-reveal="1"]');
+				if (activePrivacyHoverRow) activePrivacyHoverRow.removeAttribute('data-wa-privacy-hover');
+				// Clear stale reveal markers globally. DOM recycling can remove a row
+				// without dispatching a matching mouseout, leaving other avatars open.
+				var revealed = document.querySelectorAll('[data-wa-privacy-reveal="1"]');
 				for (var i = 0; i < revealed.length; i++) {
 					revealed[i].removeAttribute('data-wa-privacy-reveal');
-					if (revealed[i].getAttribute('data-wa-privacy-filter-overridden') === '1') {
+					if (!isPrivacyArchivedInfo(revealed[i]) && revealed[i].getAttribute('data-wa-privacy-filter-overridden') === '1') {
 						revealed[i].style.removeProperty('filter');
 						revealed[i].removeAttribute('data-wa-privacy-filter-overridden');
 					}
@@ -2004,8 +2124,9 @@ func getInitScript(ua string) string {
 				clearPrivacyHoverRow();
 				activePrivacyHoverRow = row;
 				row.setAttribute('data-wa-privacy-hover', '1');
-				var revealTargets = row.querySelectorAll('span, ._ak8q, ._ak8k, img, image, [data-testid="default-user"], [data-icon="default-user"], [data-icon="default-group"]');
+				var revealTargets = row.querySelectorAll('span, ._ak8q, ._ak8k, img, image, button, [role="button"], [data-icon], svg, [data-wa-privacy-avatar="1"], [data-testid="default-user"], [data-icon="default-user"], [data-icon="default-group"]');
 				for (var i = 0; i < revealTargets.length; i++) {
+					if (isPrivacyArchivedInfo(revealTargets[i])) continue;
 					revealTargets[i].setAttribute('data-wa-privacy-reveal', '1');
 					revealTargets[i].style.setProperty('filter', 'none', 'important');
 					revealTargets[i].setAttribute('data-wa-privacy-filter-overridden', '1');
@@ -2018,13 +2139,122 @@ func getInitScript(ua string) string {
 				}
 				var row = privacyChatRowFromTarget(target);
 				if (row) markPrivacyHoverRow(row);
+				else clearPrivacyHoverRow();
 			}
+			function markArchivedPrivacyViews() {
+				var rowSelector = '[role="row"], [role="listitem"], [data-testid="cell-frame-container"], div[tabindex="-1"], div._ak8l';
+				var avatarSelector = 'img, image, ._ak8h, [data-testid*="avatar" i], [data-testid="default-user"], [data-icon="default-user"], [data-icon="default-group"], svg[viewBox="0 0 49 49"]';
+				function isArchivedChatRow(row) {
+					if (!row || !row.querySelectorAll) return false;
+					var text = (row.textContent || '').trim();
+					if (!text || privacyIsArchivedNavigationText(text)) return false;
+					var hasChatText = row.querySelectorAll('span').length >= 2;
+					return hasChatText && (row.matches(rowSelector) || row.querySelector(avatarSelector));
+				}
+				function markRow(row) {
+					if (!isArchivedChatRow(row)) return;
+					row.setAttribute('data-wa-privacy-archived-row', '1');
+					markPrivacyAvatarTargets(row, avatarSelector);
+				}
+				function markRowsInView(view) {
+					var rows = view.querySelectorAll(rowSelector);
+					for (var r = 0; r < rows.length; r++) markRow(rows[r]);
+					var avatars = view.querySelectorAll(avatarSelector);
+					for (var a = 0; a < avatars.length; a++) {
+						var row = avatars[a].parentElement;
+						while (row && row !== view) {
+							if (isArchivedChatRow(row)) {
+								markRow(row);
+								break;
+							}
+							row = row.parentElement;
+						}
+					}
+				}
+				function markArchivedInfo(view) {
+					var candidates = view.querySelectorAll('span, p, div');
+					for (var i = 0; i < candidates.length; i++) {
+						var candidate = candidates[i];
+						var text = (candidate.textContent || '').replace(/\s+/g, ' ').trim();
+						if (text.length < 40 || text.length > 240) continue;
+						if (privacyIsArchivedInfoText(text)) {
+							candidate.setAttribute('data-wa-privacy-archived-info', '1');
+							candidate.style.setProperty('filter', 'none', 'important');
+							var children = candidate.querySelectorAll('*');
+							for (var c = 0; c < children.length; c++) children[c].style.setProperty('filter', 'none', 'important');
+					}
+				}
+			}
+				function privacyLooksLikeArchivedView(anchor) {
+					if (!anchor || !anchor.matches) return false;
+					if (anchor.getAttribute('data-wa-privacy-archived-view') === '1' ||
+						anchor.matches('[aria-label*="archiv" i], [aria-label*="diarsip" i], [data-testid*="archiv" i], [role="heading"], h1, h2, h3')) return true;
+					var parent = anchor;
+					for (var depth = 0; parent && depth < 8; depth++, parent = parent.parentElement) {
+						if (parent.querySelector && parent.querySelector('[data-icon*="back" i], [data-testid*="back" i], [aria-label*="back" i], [aria-label*="kembali" i]')) return true;
+					}
+					return false;
+				}
+				var anchors = document.querySelectorAll('[data-wa-privacy-archived-view="1"], [aria-label*="archiv" i], [aria-label*="diarsip" i], [data-testid*="archiv" i], [role="heading"], h1, h2, h3, #side span, #pane-side span');
+				for (var i = 0; i < anchors.length; i++) {
+					var anchor = anchors[i];
+					var label = (anchor.getAttribute('aria-label') || '').trim();
+					var text = (anchor.textContent || '').trim();
+					if (!/(archiv|diarsip)/i.test(label) && !privacyIsArchivedNavigationText(text) && anchor.getAttribute('data-wa-privacy-archived-view') !== '1') continue;
+					if ((anchor.matches('#side span, #pane-side span')) && !privacyLooksLikeArchivedView(anchor)) continue;
+					var view = anchor;
+					for (var depth = 0; view && depth < 8; depth++, view = view.parentElement) {
+						var hasChatRows = view.querySelector && view.querySelector(rowSelector);
+						var hasChatVisuals = view.querySelectorAll && view.querySelectorAll('img, image').length >= 2 && view.querySelectorAll('span').length >= 2;
+						if (hasChatRows || hasChatVisuals) {
+							view.setAttribute('data-wa-privacy-archived-view', '1');
+							if (view.getAttribute('data-wa-privacy-archived-info-checked') !== '1') {
+								markArchivedInfo(view);
+								view.setAttribute('data-wa-privacy-archived-info-checked', '1');
+							}
+							markRowsInView(view);
+							break;
+						}
+					}
+				}
+			}
+			function scheduleArchivedPrivacyMark() {
+				if (!isPrivacyActive) return;
+				[0, 100, 300].forEach(function(delay) {
+					setTimeout(function() {
+						if (isPrivacyActive) markArchivedPrivacyViews();
+					}, delay);
+				});
+			}
+			document.addEventListener('click', function(e) {
+				var target = e.target && e.target.closest ? e.target.closest('[data-icon*="archive" i], [data-testid*="archive" i], [aria-label*="archiv" i], [aria-label*="diarsip" i]') : null;
+				if (target || isPrivacySidebarControl(e.target)) scheduleArchivedPrivacyMark();
+			}, true);
 			document.addEventListener('mouseover', function(e) { updatePrivacyHoverFromTarget(e.target); }, true);
 			document.addEventListener('mousemove', function(e) { updatePrivacyHoverFromTarget(e.target); }, true);
 			document.addEventListener('mouseout', function(e) {
 				var row = privacyChatRowFromTarget(e.target);
 				if (row && (!e.relatedTarget || !row.contains(e.relatedTarget))) clearPrivacyHoverRow();
 			}, true);
+			var privacySidebarRefreshTimer = null;
+			function schedulePrivacySidebarRefresh() {
+				clearTimeout(privacySidebarRefreshTimer);
+				privacySidebarRefreshTimer = setTimeout(function() {
+					privacySidebarRefreshTimer = null;
+					if (!isPrivacyActive) return;
+					markPrivacyChatRows();
+					markArchivedPrivacyViews();
+					forceArchivedControlVisible();
+				}, 100);
+			}
+			var privacySidebarObserver = new MutationObserver(function() {
+				if (isPrivacyActive) schedulePrivacySidebarRefresh();
+			});
+			function observePrivacySidebar() {
+				var side = document.getElementById('side') || document.getElementById('pane-side');
+				if (side) privacySidebarObserver.observe(side, { childList: true, subtree: true });
+			}
+			observePrivacySidebar();
 
 			function applyPrivacyMode(active, silent) {
 				isPrivacyActive = !!active;
@@ -2039,6 +2269,10 @@ func getInitScript(ua string) string {
 						if (h) h.appendChild(styleEl);
 					}
 					rootEl.classList.add('privacy-mode');
+					markPrivacyChatRows();
+					markArchivedPrivacyViews();
+					forceArchivedControlVisible();
+					observePrivacySidebar();
 					if (!silent) showFloatingToast('🔒 Privacy Mode: Enabled');
 				} else {
 					rootEl.classList.remove('privacy-mode');
@@ -2086,6 +2320,9 @@ func getInitScript(ua string) string {
 			}
 			setInterval(function() {
 				if (!isPrivacyActive || shouldPauseBackgroundWork()) return;
+				markPrivacyChatRows();
+				markArchivedPrivacyViews();
+				forceArchivedControlVisible();
 				tagTimesIn(document.getElementById('main'));
 				tagTimesIn(document.getElementById('side') || document.getElementById('pane-side'));
 			}, 3000);

@@ -19,6 +19,10 @@ Version numbers are declared in exactly one place — `appVersion` in `updater.g
 
 ## [Unreleased]
 
+### Fixed
+
+- Keep the Archived navigation row visible while blurring actual chat rows in Privacy Mode (#50).
+
 ## [1.5.9.8] - 2026-09-22
 
 > Click Recovery, Multi-File Upload Hardening & WebKitGTK 4.1
