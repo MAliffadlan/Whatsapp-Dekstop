@@ -540,6 +540,23 @@ func TestUpdateProgressKeepsStatusTextInSync(t *testing.T) {
 	}
 }
 
+func TestUpdateBannerReservesLayoutSpace(t *testing.T) {
+	script := getInitScript("test-agent")
+	for _, want := range []string{
+		"html.wa-update-visible #app",
+		"--wa-update-banner-height",
+		"banner.offsetHeight",
+		"layoutRoot.classList.add('wa-update-visible')",
+		"bannerResizeObserver.disconnect()",
+		"document.documentElement.classList.remove('wa-update-visible')",
+		"document.documentElement.style.removeProperty('--wa-update-banner-height')",
+	} {
+		if !strings.Contains(script, want) {
+			t.Errorf("update banner layout compensation is missing %q", want)
+		}
+	}
+}
+
 func TestUpdaterErrorKeepsClearMessageAndRetryAction(t *testing.T) {
 	script := getInitScript("test-agent")
 	start := strings.Index(script, "window.onUpdateError = function(errMsg)")
