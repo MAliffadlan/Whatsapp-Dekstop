@@ -163,36 +163,116 @@ func findAssetForPlatform(release *GitHubRelease, goos, goarch string) *GitHubAs
 }
 
 // webkitGTK40Present reports whether the WebKitGTK 4.0 runtime library is
-// available on this Linux system. The loader cache (ldconfig -p) is
-// authoritative; well-known library directories are a fallback for systems
-// without ldconfig. Any detection failure returns true so asset selection
-// falls back to the historical 4.0-named artifact — never worse than before
-// this check existed (fail-open). Non-Linux builds always report true.
+// available on this Linux system.
+//
+// Two independent signals are consulted, and absence is only reported when the
+// filesystem scan proves it:
+//
+//  1. the dynamic loader cache, via `ldconfig -p`;
+//  2. a direct listing of the well-known library directories.
+//
+// ldconfig is resolved through absolute paths as well as PATH, because a
+// GUI-launched app does not always inherit /sbin or /usr/sbin in its PATH —
+// desktop launchers and non-systemd sessions routinely omit them. Resolving
+// only through PATH made the loader probe fail on exactly the 4.1-only
+// systems this check exists for, and the fail-open fallback then silently kept
+// selecting the 4.0 artifact.
+//
+// The fail-open result (reporting 4.0 as present) is reserved for genuinely
+// inconclusive cases: no usable ldconfig *and* no readable library directory,
+// so no signal could be gathered. It can therefore never be worse than the
+// behaviour before this check existed. Non-Linux builds always report true.
 func webkitGTK40Present() bool {
 	if runtime.GOOS != "linux" {
 		return true
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	if out, err := exec.CommandContext(ctx, "ldconfig", "-p").Output(); err == nil {
-		for _, line := range strings.Split(string(out), "\n") {
-			if strings.Contains(line, "libwebkit2gtk-4.0.so") {
-				return true
-			}
-		}
-		return false
-	}
-	for _, dir := range []string{
-		"/usr/lib/x86_64-linux-gnu",
-		"/usr/lib/aarch64-linux-gnu",
-		"/usr/lib64",
-		"/usr/lib",
-	} {
-		if matches, _ := filepath.Glob(filepath.Join(dir, "libwebkit2gtk-4.0.so*")); len(matches) > 0 {
+
+	if path := linuxLdconfigPath(); path != "" {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		out, err := exec.CommandContext(ctx, path, "-p").Output()
+		cancel()
+		if err == nil && strings.Contains(string(out), webkit40LibPrefix) {
 			return true
 		}
 	}
+
+	// Either ldconfig was unavailable, or it reported no match. Scan the
+	// library directories as a second opinion: it also covers a 4.0 library
+	// that is reachable through LD_LIBRARY_PATH but absent from the cache.
+	found, anyReadable := webkit40InDirs(webkit40SearchDirs())
+	if found {
+		return true
+	}
+	if anyReadable {
+		// Direct filesystem evidence: a readable directory that holds no
+		// WebKitGTK 4.0 library, which the loader cache also did not list.
+		return false
+	}
+	// Genuinely inconclusive — no usable ldconfig and no readable library
+	// directory — so stay fail-open and keep the historical artifact.
 	return true
+}
+
+const webkit40LibPrefix = "libwebkit2gtk-4.0.so"
+
+// linuxLdconfigPath resolves the ldconfig binary, preferring PATH and falling
+// back to the absolute locations it ships in. Returns "" when it cannot be
+// found or is not executable.
+func linuxLdconfigPath() string {
+	candidates := make([]string, 0, 5)
+	if path, err := exec.LookPath("ldconfig"); err == nil && path != "" {
+		candidates = append(candidates, path)
+	}
+	candidates = append(candidates,
+		"/sbin/ldconfig",
+		"/usr/sbin/ldconfig",
+		"/bin/ldconfig",
+		"/usr/bin/ldconfig",
+	)
+	for _, candidate := range candidates {
+		info, err := os.Stat(candidate)
+		if err != nil || info.IsDir() || info.Mode()&0111 == 0 {
+			continue
+		}
+		return candidate
+	}
+	return ""
+}
+
+// webkit40SearchDirs lists the directories WebKitGTK 4.0 is installed into by
+// the distributions this project targets, including the usrmerge symlinks and
+// the Fedora multiarch location.
+func webkit40SearchDirs() []string {
+	return []string{
+		"/usr/lib/x86_64-linux-gnu",
+		"/lib/x86_64-linux-gnu",
+		"/usr/lib/aarch64-linux-gnu",
+		"/lib/aarch64-linux-gnu",
+		"/usr/lib64",
+		"/usr/lib",
+		"/lib",
+	}
+}
+
+// webkit40InDirs reports whether any of dirs contains a WebKitGTK 4.0 shared
+// object, and whether at least one directory could be read. The second value
+// is what makes a negative first value meaningful: a readable directory that
+// holds no such library is evidence of absence, while a set of unreadable
+// directories proves nothing.
+func webkit40InDirs(dirs []string) (found, anyReadable bool) {
+	for _, dir := range dirs {
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			continue
+		}
+		anyReadable = true
+		for _, entry := range entries {
+			if strings.HasPrefix(entry.Name(), webkit40LibPrefix) {
+				return true, true
+			}
+		}
+	}
+	return false, anyReadable
 }
 
 // findLinuxAsset selects the self-update tarball for a Linux bundleArch.
