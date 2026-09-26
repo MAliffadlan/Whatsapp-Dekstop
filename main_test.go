@@ -462,6 +462,7 @@ func TestUpdateBannerReservesLayoutSpace(t *testing.T) {
 		"--wa-update-banner-height",
 		"banner.offsetHeight",
 		"layoutRoot.classList.add('wa-update-visible')",
+		"bannerResizeObserver.disconnect()",
 		"document.documentElement.classList.remove('wa-update-visible')",
 		"document.documentElement.style.removeProperty('--wa-update-banner-height')",
 	} {

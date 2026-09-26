@@ -2377,6 +2377,7 @@ func getInitScript(ua string) string {
 
 				banner.appendChild(leftWrap);
 				banner.appendChild(rightWrap);
+				var bannerResizeObserver = null;
 				var bannerParent = document.body || document.documentElement;
 				if (bannerParent) {
 					bannerParent.appendChild(banner);
@@ -2388,7 +2389,7 @@ func getInitScript(ua string) string {
 					};
 					syncBannerLayout();
 					if (window.ResizeObserver) {
-						var bannerResizeObserver = new ResizeObserver(syncBannerLayout);
+						bannerResizeObserver = new ResizeObserver(syncBannerLayout);
 						bannerResizeObserver.observe(banner);
 					}
 				}
@@ -2418,6 +2419,10 @@ func getInitScript(ua string) string {
 
 				btnDismiss.onclick = function() {
 					sessionStorage.setItem('dismissed_update_' + latestVersion, 'true');
+					if (bannerResizeObserver) {
+						bannerResizeObserver.disconnect();
+						bannerResizeObserver = null;
+					}
 					if (banner.parentNode) {
 						banner.parentNode.removeChild(banner);
 					}
